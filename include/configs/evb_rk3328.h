@@ -22,4 +22,7 @@
 #define CONFIG_BOOTCOMMAND RKIMG_BOOTCOMMAND
 #endif
 
+#define CONFIG_MISC_INIT_R
+#define CONFIG_SERIAL_TAG
+
 #endif
