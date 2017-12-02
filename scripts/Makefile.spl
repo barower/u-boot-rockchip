@@ -249,7 +249,7 @@ $(obj)/$(SPL_BIN)-pad.bin: $(obj)/$(SPL_BIN)
 $(obj)/$(SPL_BIN).dtb: dts/dt-spl.dtb FORCE
 	$(call if_changed,copy)
 
-pythonpath = PYTHONPATH=scripts/dtc/pylibfdt
+pythonpath = python
 
 quiet_cmd_dtocc = DTOC C  $@
 cmd_dtocc = $(pythonpath) $(srctree)/tools/dtoc/dtoc -d $(obj)/$(SPL_BIN).dtb -o $@ platdata
