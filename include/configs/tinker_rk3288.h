@@ -20,4 +20,7 @@
 
 #define CONFIG_SYS_MMC_ENV_DEV 1
 
+#define CONFIG_MISC_INIT_R
+#define CONFIG_SERIAL_TAG
+
 #endif
