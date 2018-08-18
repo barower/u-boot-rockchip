@@ -123,9 +123,9 @@ int setup_boot_mode(void)
 	int boot_mode = BOOT_MODE_NORMAL;
 	char env_preboot[256] = {0};
 
+#ifdef CONFIG_RKIMG_BOOTLOADER
 	devtype_num_envset();
 	rockchip_dnl_mode_check();
-#ifdef CONFIG_RKIMG_BOOTLOADER
 	boot_mode = rockchip_get_boot_mode();
 #endif
 	switch (boot_mode) {
