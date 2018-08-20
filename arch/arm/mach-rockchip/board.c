@@ -44,6 +44,7 @@ DECLARE_GLOBAL_DATA_PTR;
 static int rockchip_set_serialno(void)
 {
 	char serialno_str[VENDOR_SN_MAX];
+	char cpuid_str[CPUID_LEN * 2 + 1];
 	int ret = 0, i;
 	u8 cpuid[CPUID_LEN] = {0};
 	u8 low[CPUID_LEN / 2], high[CPUID_LEN / 2];
@@ -89,6 +90,13 @@ static int rockchip_set_serialno(void)
 		snprintf(serialno_str, sizeof(serialno_str), "%llx", serialno);
 
 		env_set("serial#", serialno_str);
+
+		memset(cpuid_str, 0, sizeof(cpuid_str));
+		for (i = 0; i < CPUID_LEN; i++) {
+			sprintf(&cpuid_str[i * 2], "%02x", cpuid[i]);
+		}
+
+		env_set("cpuid#", cpuid_str);
 #ifdef CONFIG_ROCKCHIP_VENDOR_PARTITION
 	}
 #endif
