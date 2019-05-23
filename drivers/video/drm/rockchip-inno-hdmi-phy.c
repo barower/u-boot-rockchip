@@ -942,6 +942,7 @@ static int inno_hdmi_phy_init(struct display_state *state)
 	inno = malloc(sizeof(*inno));
 	if (!inno)
 		return -ENOMEM;
+	memset(inno, 0, sizeof(*inno));
 
 	inno->blob = blob;
 	inno->node = phy_node;
