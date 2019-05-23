@@ -958,13 +958,14 @@ endif
 
 RKLoader_uboot.bin: u-boot.bin
 ifdef CONFIG_SECOND_LEVEL_BOOTLOADER
+
 ifdef CONFIG_PRODUCT_ECHO
-	$(if $(CONFIG_MERGER_MINILOADER), ./tools/boot_merger ./tools/rk_tools/RKBOOT/$(RKCHIP)_ECHOMINIALL.ini)
+	$(if $(CONFIG_MERGER_MINILOADER), ./tools/boot_merger --prepath tools/rk_tools/ ./tools/rk_tools/RKBOOT/$(RKCHIP)_ECHOMINIALL.ini)
 else
-	$(if $(CONFIG_MERGER_MINILOADER), ./tools/boot_merger ./tools/rk_tools/RKBOOT/$(RKCHIP)MINIALL.ini)
+	$(if $(CONFIG_MERGER_MINILOADER), ./tools/boot_merger --prepath tools/rk_tools/ ./tools/rk_tools/RKBOOT/$(RKCHIP)MINIALL.ini)
 endif
 	$(if $(CONFIG_MERGER_TRUSTIMAGE), ./tools/trust_merger $(if $(CONFIG_RK_TRUSTOS), --subfix) \
-					$(if $(CONFIG_RKCHIP_RK3368), --sha 2) ./tools/rk_tools/RKTRUST/$(RKCHIP)TRUST.ini)
+					$(if $(CONFIG_RKCHIP_RK3368), --sha 2)  --prepath tools/rk_tools/ ./tools/rk_tools/RKTRUST/$(RKCHIP)TRUST.ini)
 
 ifdef CONFIG_MERGER_TRUSTOS
 	$(if $(RK_TOS_BIN), ./tools/loaderimage --pack --trustos $(RK_TOS_BIN) trust.img)
@@ -972,7 +973,9 @@ ifdef CONFIG_MERGER_TRUSTOS
 endif
 	./tools/loaderimage --pack --uboot u-boot.bin uboot.img
 else
-	./tools/boot_merger --subfix "$(RK_SUBFIX)" $(if $(CONFIG_RKCHIP_RK3288), --size 1024) ./tools/rk_tools/RKBOOT/$(RKCHIP).ini
+	# The u-boot.bin copy is a workarund as we use "--prepath".
+	cp u-boot.bin tools/rk_tools/
+	./tools/boot_merger --subfix "$(RK_SUBFIX)" $(if $(CONFIG_RKCHIP_RK3288), --size 1024) --prepath tools/rk_tools/ ./tools/rk_tools/RKBOOT/$(RKCHIP).ini
 endif # CONFIG_SECOND_LEVEL_BOOTLOADER
 
 endif # CONFIG_ROCKCHIP
