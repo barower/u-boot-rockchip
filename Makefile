@@ -968,14 +968,14 @@ endif
 					$(if $(CONFIG_RKCHIP_RK3368), --sha 2)  --prepath tools/rk_tools/ ./tools/rk_tools/RKTRUST/$(RKCHIP)TRUST.ini)
 
 ifdef CONFIG_MERGER_TRUSTOS
-	$(if $(RK_TOS_BIN), ./tools/loaderimage --pack --trustos $(RK_TOS_BIN) trust.img)
-	$(if $(RK_TOS_TA_BIN), ./tools/loaderimage --pack --trustos $(RK_TOS_TA_BIN) $(if $(RK_TOS_BIN), trust_with_ta.img, trust.img))
+	$(if $(RK_TOS_BIN), ./tools/loaderimage --prepath tools/rk_tools/ --pack --trustos $(RK_TOS_BIN) trust.img)
+	$(if $(RK_TOS_TA_BIN), ./tools/loaderimage --prepath tools/rk_tools/ --pack --trustos $(RK_TOS_TA_BIN) $(if $(RK_TOS_BIN), trust_with_ta.img, trust.img))
 endif
 	./tools/loaderimage --pack --uboot u-boot.bin uboot.img
 else
-	# The u-boot.bin copy is a workarund as we use "--prepath".
-	cp u-boot.bin tools/rk_tools/
+	@ cp u-boot.bin tools/rk_tools/
 	./tools/boot_merger --subfix "$(RK_SUBFIX)" $(if $(CONFIG_RKCHIP_RK3288), --size 1024) --prepath tools/rk_tools/ ./tools/rk_tools/RKBOOT/$(RKCHIP).ini
+	@ rm tools/rk_tools/u-boot.bin
 endif # CONFIG_SECOND_LEVEL_BOOTLOADER
 
 endif # CONFIG_ROCKCHIP
