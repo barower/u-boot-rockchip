@@ -12,7 +12,7 @@
 #include <memory.h>
 #include <stdbool.h>
 
-//#define DEBUG
+/* #define DEBUG */
 
 extern bool gDebug;
 
@@ -200,4 +200,4 @@ typedef struct {
 
 #define VERSION             "2013-8-12 14:27:23"
 
-#endif// BOOT_MERGER_H
+#endif/* BOOT_MERGER_H */

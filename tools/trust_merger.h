@@ -48,6 +48,7 @@
 #define OPT_RSA		    "--rsa"
 #define OPT_SHA		    "--sha"
 #define OPT_SIZE	    "--size"
+#define OPT_IGNORE_BL32     "--ignore-bl32"
 
 #define DEF_MAJOR           0
 #define DEF_MINOR           0
@@ -76,7 +77,7 @@ enum {
 
 
 
-typedef struct{
+typedef struct {
 	bool		sec;
 	uint32_t	id;
 	char		path[MAX_LINE_LEN];
@@ -86,7 +87,7 @@ typedef struct{
 	uint32_t	align_size;
 } bl_entry_t;
 
-typedef struct{
+typedef struct {
 	uint16_t	major;
 	uint16_t	minor;
 	bl_entry_t	bl3x[BL_MAX_SEC];
@@ -98,7 +99,7 @@ typedef struct{
 #define SIGNATURE_SIZE			256
 #define TRUST_HEADER_SIZE		2048
 
-typedef struct{
+typedef struct {
 	uint32_t tag;
 	uint32_t version;
 	uint32_t flags;
@@ -110,14 +111,14 @@ typedef struct{
 } TRUST_HEADER, *PTRUST_HEADER;
 
 
-typedef struct{
+typedef struct {
 	uint32_t HashData[8];
 	uint32_t LoadAddr;
 	uint32_t reserved[3];
 } COMPONENT_DATA, *PCOMPONENT_DATA;
 
 
-typedef struct{
+typedef struct {
 	uint32_t ComponentID;
 	uint32_t StorageAddr;
 	uint32_t ImageSize;
@@ -127,7 +128,7 @@ typedef struct{
 #define EI_NIDENT	16
 #define ELF_MAGIC 0x464c457f
 
-typedef struct{
+typedef struct {
 	uint8_t	e_ident[EI_NIDENT];
 	uint16_t	e_type;
 	uint16_t	e_machine;
@@ -144,7 +145,7 @@ typedef struct{
 	uint16_t	e_shstrndx;
 } Elf32_Ehdr;
 
-typedef struct{
+typedef struct {
 	uint8_t	e_ident[EI_NIDENT];	/* ELF "magic number" */
 	uint16_t e_type;
 	uint16_t e_machine;
@@ -161,7 +162,7 @@ typedef struct{
 	uint16_t e_shstrndx;
 } Elf64_Ehdr;
 
-typedef struct{
+typedef struct {
 	uint32_t	p_type;
 	uint32_t	p_offset;
 	uint32_t	p_vaddr;
@@ -172,7 +173,7 @@ typedef struct{
 	uint32_t	p_align;
 } Elf32_Phdr;
 
-typedef struct{
+typedef struct {
 	uint32_t p_type;
 	uint32_t p_flags;
 	uint64_t p_offset;		/* Segment file offset */
