@@ -504,12 +504,12 @@ static void rk816_bat_select_chrg_cv(struct battery_info *di)
 	chrg_cur_sel = di->dts_cur_sel;
 	chrg_cur_input = di->dts_cur_input;
 
-	if (!di->over_20mR) {
+	if (di->sample_res < 20) {
 		if (chrg_cur_sel > 2000)
 			chrg_cur_sel = RES_FAC_DIV(chrg_cur_sel, di->res_fac);
 		else
 			chrg_cur_sel = 1000;
-	} else {
+	} else if (di->sample_res > 20) {
 		chrg_cur_sel = RES_FAC_MUX(chrg_cur_sel, di->res_fac);
 		if (chrg_cur_sel > 2400)
 			chrg_cur_sel = 2400;
