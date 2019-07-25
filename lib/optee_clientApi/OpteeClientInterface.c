@@ -118,7 +118,20 @@ int write_keybox_to_secure_storage(uint8_t *uboot_data, uint32_t len)
 	uint32_t key_size;
 	uint32_t data_size;
 	TEEC_Result ret = 0;
+	uint8_t is_use_rpmb;
 
+	if (StorageGetBootMedia() == BOOT_FROM_EMMC)
+		is_use_rpmb = 1;
+	else
+		is_use_rpmb = 0;
+#ifdef CONFIG_OPTEE_ALWAYS_USE_SECURITY_PARTITION
+	is_use_rpmb = 0;
+#endif
+	ret = write_to_keymaster((uint8_t *)"security_partition",
+				 sizeof("security_partition"),
+				 &is_use_rpmb, sizeof(is_use_rpmb));
+	if (ret)
+		return ret;
 	if (memcmp(uboot_data, WIDEVINE_TAG, 4) == 0) {
 		/* widevine keybox */
 		TEEC_UUID widevine_uuid = { 0x1b484ea5, 0x698b, 0x4142,
