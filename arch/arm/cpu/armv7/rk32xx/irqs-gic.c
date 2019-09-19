@@ -221,8 +221,15 @@ static void gic_irq_init(void)
 {
 	debug("gic_irq_init.\n");
 
-	/* end of interrupt */
-	g_giccReg->icceoir = NR_GIC_IRQS;
+	/*
+	 * If system bootflow is: maskrom => U-Boot
+	 *
+	 * IRQ_USB_OTG must be acked by GICC_EIO due to maskrom jumps to the
+	 * U-Boot in its USB interrupt. Without this ack, the GICC_IAR always
+	 * return a spurious interrupt ID 1023 for USB OTG interrupt.
+	 */
+	g_giccReg->icceoir = IRQ_USB_OTG;
+
 	/* disable signalling the interrupt */
 	g_giccReg->iccicr = 0x00;
 	g_gicdReg->icddcr = 0x00;
