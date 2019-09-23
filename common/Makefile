@@ -132,6 +132,7 @@ obj-$(CONFIG_CMD_LDRINFO) += cmd_ldrinfo.o
 obj-$(CONFIG_CMD_LED) += cmd_led.o
 obj-$(CONFIG_CMD_LICENSE) += cmd_license.o
 obj-y += cmd_test_irq.o
+obj-y += iomem.o
 ifndef CONFIG_ROCKCHIP
 obj-y += cmd_load.o
 endif
