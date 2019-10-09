@@ -537,6 +537,9 @@ static int32 SecureRKModeGetRSAKey(void)
 		return -1;
 	}
 
+	if (pRSAKey_head->reserved1[0] == 0x4B415352)
+		Efuse_SecureBootEn = 1;	/* Efuse secure-boot flag enabled */
+
 	PRINT_E("Secure Boot find rsa key in ram.\n");
 
 	memset((void *)g_rsa_key_buf, 0, sizeof(g_rsa_key_buf));

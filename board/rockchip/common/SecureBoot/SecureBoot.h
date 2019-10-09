@@ -27,7 +27,9 @@ typedef /*__packed*/ struct tagBOOT_HEADER {
 	uint32 version;
 	uint32 flags;
 	uint32 size;
-	uint32 reserved1[3];
+	uint16 CurrVersion;
+	uint16 MinVersion;
+	uint32 reserved1[2];
 	uint16 HashBits;
 	uint16 RSABits;                /* length in bits of modulus */
 	uint32 RSA_N[64];
@@ -96,6 +98,7 @@ extern DRM_KEY_INFO gDrmKeyInfo;
 
 extern uint32 SecureMode;
 extern uint32 SecureBootEn;
+extern uint32 Efuse_SecureBootEn;
 extern uint32 SecureBootCheckOK;
 extern uint32 SecureBootLock;
 extern uint32 SecureBootLock_backup;
