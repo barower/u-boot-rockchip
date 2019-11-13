@@ -23,7 +23,6 @@
 
 //#define EDP_BIST_MODE
 
-#define RUN_IN_UBOOT
 static struct rk32_edp rk32_edp;
 
 #if (defined(CONFIG_RKCHIP_RK3288))
@@ -69,12 +68,10 @@ static int rk32_edp_clk_enable(struct rk32_edp *edp)
 }
 #endif
 
-#ifndef RUN_IN_UBOOT
 static int rk32_edp_clk_disable(struct rk32_edp *edp)
 {
 	return 0;
 }
-#endif /* #ifndef RUN_IN_UBOOT */
 
 #define RK3368_GRF_SOC_CON4	0x410
 static int rk32_edp_pre_init(void)
@@ -154,7 +151,6 @@ static int rk32_edp_init_edp(struct rk32_edp *edp)
 }
 
 
-#ifndef RUN_IN_UBOOT
 static int rk32_edp_detect_hpd(struct rk32_edp *edp)
 {
 	int timeout_loop = 0;
@@ -175,6 +171,7 @@ static int rk32_edp_detect_hpd(struct rk32_edp *edp)
 	return 0;
 }
 
+#if 0
 static int rk32_edp_read_edid(struct rk32_edp *edp)
 {
 	unsigned char edid[EDID_LENGTH * 2];
@@ -316,6 +313,7 @@ static int rk32_edp_handle_edid(struct rk32_edp *edp)
 
 	return retval;
 }
+#endif
 
 static int rk32_edp_enable_rx_to_enhanced_mode(struct rk32_edp *edp,
 						bool enable)
@@ -872,7 +870,6 @@ reduce_link_rate:
 	rk32_edp_reduce_link_rate(edp);
 	return -EIO;
 }
-#endif /* #ifndef RUN_IN_UBOOT */
 
 static int rk32_edp_get_max_rx_bandwidth(struct rk32_edp *edp,
 					u8 *bandwidth)
@@ -951,7 +948,6 @@ static int rk32_edp_init_training(struct rk32_edp *edp)
 	return 0;
 }
 
-#ifndef RUN_IN_UBOOT
 static int rk32_edp_sw_link_training(struct rk32_edp *edp)
 {
 	int retval = 0;
@@ -987,7 +983,6 @@ static int rk32_edp_sw_link_training(struct rk32_edp *edp)
 
 	return retval;
 }
-#endif /* #ifndef RUN_IN_UBOOT */
 
 static int rk32_edp_hw_link_training(struct rk32_edp *edp)
 {
@@ -1020,7 +1015,7 @@ static int rk32_edp_set_link_train(struct rk32_edp *edp)
 	retval = rk32_edp_init_training(edp);
 	if (retval < 0)
 		printf( "DP LT init failed!\n");
-#if 0
+#if 1
 	retval = rk32_edp_sw_link_training(edp);
 #else
 	retval = rk32_edp_hw_link_training(edp);
@@ -1102,7 +1097,6 @@ static int rk32_edp_config_video(struct rk32_edp *edp,
 	return retval;
 }
 
-#ifndef RUN_IN_UBOOT
 static int rk32_edp_enable_scramble(struct rk32_edp *edp, bool enable)
 {
 	u8 data;
@@ -1140,7 +1134,6 @@ static int rk32_edp_enable_scramble(struct rk32_edp *edp, bool enable)
 
 	return 0;
 }
-#endif /* #ifndef RUN_IN_UBOOT */
 
 int rk32_edp_enable(vidinfo_t *vid)
 {
@@ -1183,7 +1176,6 @@ int rk32_edp_enable(vidinfo_t *vid)
 	return ret;
 }
 
-#ifndef RUN_IN_UBOOT
 static int  rk32_edp_disable(void )
 {
 	struct rk32_edp *edp = &rk32_edp;
@@ -1194,4 +1186,3 @@ static int  rk32_edp_disable(void )
 	
 	return 0;
 }
-#endif /* #ifndef RUN_IN_UBOOT */

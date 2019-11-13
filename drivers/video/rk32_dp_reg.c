@@ -78,14 +78,10 @@ void rk32_edp_init_refclk(struct rk32_edp *edp)
 	
 	val = 0x19;
 	edp_reg_write(edp, SSC_REG, val);
-	val = 0x87;
-	edp_reg_write(edp, TX_REG_COMMON, val);
 	val = 0x03;
 	edp_reg_write(edp, DP_AUX, val);
 	val = 0x46;
 	edp_reg_write(edp, DP_BIAS, val);
-	val = 0x55;
-	edp_reg_write(edp, DP_RESERVE2, val);
 	
 	
 	/*val = DRIVE_DVDD_BIT_1_0625V | VCO_BIT_600_MICRO;
