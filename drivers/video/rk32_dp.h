@@ -535,6 +535,19 @@ struct rk32_edp {
 	struct video_info	video_info;
 };
 
+static inline void edp_reg_write(struct rk32_edp *edp, u32 reg, u32 val)
+{
+	readl(edp->regs);
+	writel(val, edp->regs + reg);
+	writel(val, edp->regs + reg);
+}
+
+static inline u32 edp_reg_read(struct rk32_edp *edp, u32 reg)
+{
+	readl(edp->regs + reg);
+
+	return readl(edp->regs + reg);
+}
 
 void rk32_edp_enable_video_mute(struct rk32_edp *edp, bool enable);
 void rk32_edp_stop_video(struct rk32_edp *edp);
