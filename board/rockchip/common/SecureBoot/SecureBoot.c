@@ -9,7 +9,7 @@
 
 uint32	SecureMode;
 uint32  SecureBootEn;
-uint32  Efuse_SecureBootEn;
+uint32  Efuse_SecureBootEn = -EINVAL;
 uint32  SecureBootCheckOK;
 uint32  SecureBootLock;
 uint32  SecureBootLock_backup;

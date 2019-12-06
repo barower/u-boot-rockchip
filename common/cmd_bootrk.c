@@ -597,8 +597,12 @@ static void rk_commandline_setenv(const char *boot_name, rk_boot_img_hdr *hdr, b
 #endif
 
 	snprintf(command_line, sizeof(command_line),
-			 "%s SecureBootCheckOk=%d, Efuse_SecureBoot=%d",
-			 command_line, SecureBootCheckOK, Efuse_SecureBootEn);
+		 "%s SecureBootCheckOk=%d", command_line, SecureBootCheckOK);
+
+	if (Efuse_SecureBootEn != -EINVAL)
+		snprintf(command_line, sizeof(command_line),
+			 "%s Efuse_SecureBoot=%d fuse.programmed=%d",
+			 command_line, Efuse_SecureBootEn, Efuse_SecureBootEn);
 
 	char *sn = getenv("fbt_sn#");
 	if (sn != NULL) {
