@@ -300,7 +300,7 @@ struct bmp_header *get_bmp_header(const char *bmp_name)
 		return NULL;
 
 	if (ptn) {
-		if (read_storage(ptn->start, bmp, 1))
+		if (!read_storage(ptn->start, bmp, 1))
 			goto free_bmp;
 
 	} else {
