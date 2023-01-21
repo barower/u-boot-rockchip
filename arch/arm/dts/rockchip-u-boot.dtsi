@@ -11,7 +11,7 @@
 	};
 };
 
-#ifdef CONFIG_TPL
+#ifdef CONFIG_SPL
 &binman {
 	simple-bin {
 		filename = "u-boot-rockchip.bin";
@@ -20,12 +20,15 @@
 		mkimage {
 			filename = "idbloader.img";
 			args = "-n", CONFIG_SYS_SOC, "-T", "rksd";
-#ifdef CONFIG_TPL
 			multiple-data-files;
 
+#ifdef CONFIG_TPL
 			u-boot-tpl {
-			};
+#else
+			blob {
+				filename = "ddr.bin";
 #endif
+			};
 			u-boot-spl {
 			};
 		};
@@ -134,12 +137,15 @@
 		mkimage {
 			filename = "idbloader-spi.img";
 			args = "-n", CONFIG_SYS_SOC, "-T", "rkspi";
-#ifdef CONFIG_TPL
 			multiple-data-files;
 
+#ifdef CONFIG_TPL
 			u-boot-tpl {
-			};
+#else
+			blob {
+				filename = "ddr.bin";
 #endif
+			};
 			u-boot-spl {
 			};
 		};
