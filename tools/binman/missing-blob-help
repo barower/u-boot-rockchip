@@ -14,6 +14,11 @@ atf-bl31-sunxi:
 Please read the section on ARM Trusted Firmware (ATF) in
 board/sunxi/README.sunxi64
 
+external-tpl-rockchip:
+External TPL is required to initialize DRAM. Get external TPL binary and
+build with EXTERNAL_TPL=/path/to/ddr.bin. One possible source for
+external TPL binary is https://github.com/rockchip-linux/rkbin.
+
 scp-sunxi:
 SCP firmware is required for system suspend, but is otherwise optional.
 Please read the section on SCP firmware in board/sunxi/README.sunxi64
