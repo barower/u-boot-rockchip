@@ -468,6 +468,18 @@ updating the EC on startup via software sync.
 
 
 
+.. _etype_external_tpl:
+
+Entry: external-tpl: External TPL binary
+----------------------------------------
+
+Properties / Entry arguments:
+    - external-tpl-path: Filename of file to read into the entry.
+
+This entry holds an external TPL binary.
+
+
+
 .. _etype_fdtmap:
 
 Entry: fdtmap: An entry which contains an FDT map

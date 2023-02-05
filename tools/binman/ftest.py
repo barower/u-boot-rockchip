@@ -90,6 +90,7 @@ TEE_OS_DATA           = b'this is some tee OS data'
 ATF_BL2U_DATA         = b'bl2u'
 OPENSBI_DATA          = b'opensbi'
 SCP_DATA              = b'scp'
+EXTERNAL_TPL_DATA     = b'external-tpl'
 TEST_FDT1_DATA        = b'fdt1'
 TEST_FDT2_DATA        = b'test-fdt2'
 ENV_DATA              = b'var1=1\nvar2="2"'
@@ -205,6 +206,7 @@ class TestFunctional(unittest.TestCase):
         TestFunctional._MakeInputFile('bl2u.bin', ATF_BL2U_DATA)
         TestFunctional._MakeInputFile('fw_dynamic.bin', OPENSBI_DATA)
         TestFunctional._MakeInputFile('scp.bin', SCP_DATA)
+        TestFunctional._MakeInputFile('external-tpl.bin', EXTERNAL_TPL_DATA)
 
         # Add a few .dtb files for testing
         TestFunctional._MakeInputFile('%s/test-fdt1.dtb' % TEST_FDT_SUBDIR,
@@ -4102,6 +4104,11 @@ class TestFunctional(unittest.TestCase):
         """Test that an image with an SCP binary can be created"""
         data = self._DoReadFile('172_scp.dts')
         self.assertEqual(SCP_DATA, data[:len(SCP_DATA)])
+
+    def testPackExternalTpl(self):
+        """Test that an image with an external TPL binary can be created"""
+        data = self._DoReadFile('277_external_tpl.dts')
+        self.assertEqual(EXTERNAL_TPL_DATA, data[:len(EXTERNAL_TPL_DATA)])
 
     def testFitFdt(self):
         """Test an image with an FIT with multiple FDT images"""
