@@ -7,11 +7,11 @@
 
 / {
 	aliases {
-		mmc0 = &sdmmc;
+		mmc1 = &sdmmc;
 	};
 
 	chosen {
-		u-boot,spl-boot-order = "same-as-spl", &sdmmc;
+		u-boot,spl-boot-order = "same-as-spl", &sdmmc, &sdhci;
 	};
 };
 
