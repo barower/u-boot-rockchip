@@ -285,18 +285,22 @@ static int rk3399_sdhci_set_ios_post(struct sdhci_host *host)
 	return 0;
 }
 
-static int rk3568_sdhci_emmc_set_clock(struct sdhci_host *host, unsigned int clock)
+static void rk3568_sdhci_set_clock(struct sdhci_host *host, u32 div)
+{
+	struct rockchip_sdhc *priv = container_of(host, struct rockchip_sdhc, host);
+	struct mmc *mmc = host->mmc;
+
+	clk_set_rate(&priv->emmc_clk, mmc->clock);
+}
+
+static int rk3568_sdhci_config_dll(struct sdhci_host *host, u32 clock, bool enable)
 {
 	struct rockchip_sdhc *priv = container_of(host, struct rockchip_sdhc, host);
 	int val, ret;
 	u32 extra;
 
-	if (clock > host->max_clk)
-		clock = host->max_clk;
-	if (clock)
-		clk_set_rate(&priv->emmc_clk, clock);
-
-	sdhci_set_clock(host->mmc, clock);
+	if (!enable)
+		return 0;
 
 	if (clock >= 100 * MHz) {
 		/* reset DLL */
@@ -380,13 +384,7 @@ static int rk3568_sdhci_set_enhanced_strobe(struct sdhci_host *host)
 static int rk3568_sdhci_set_ios_post(struct sdhci_host *host)
 {
 	struct mmc *mmc = host->mmc;
-	uint clock = mmc->tran_speed;
 	u32 reg;
-
-	if (!clock)
-		clock = mmc->clock;
-
-	rk3568_sdhci_emmc_set_clock(host, clock);
 
 	if (mmc->selected_mode == MMC_HS_400 || mmc->selected_mode == MMC_HS_400_ES) {
 		reg = sdhci_readw(host, SDHCI_HOST_CONTROL2);
@@ -606,6 +604,8 @@ static const struct sdhci_data rk3399_data = {
 static const struct sdhci_data rk3568_data = {
 	.get_phy = rk3568_emmc_get_phy,
 	.set_ios_post = rk3568_sdhci_set_ios_post,
+	.set_clock = rk3568_sdhci_set_clock,
+	.config_dll = rk3568_sdhci_config_dll,
 	.set_enhanced_strobe = rk3568_sdhci_set_enhanced_strobe,
 };
 
