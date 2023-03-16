@@ -25,6 +25,62 @@
 	status = "disabled";
 };
 
+&pinctrl {
+	u-boot,dm-spl;
+};
+
+&pcfg_pull_up {
+	u-boot,dm-spl;
+};
+
+&pcfg_pull_none {
+	u-boot,dm-spl;
+};
+
+&pcfg_pull_up_drv_level_2 {
+	u-boot,dm-spl;
+};
+
+&uart2m0_xfer {
+	u-boot,dm-spl;
+};
+
+&fspi_pins {
+	u-boot,dm-spl;
+};
+
+&sdmmc0_bus4 {
+	u-boot,dm-spl;
+};
+
+&sdmmc0_clk {
+	u-boot,dm-spl;
+};
+
+&sdmmc0_cmd {
+	u-boot,dm-spl;
+};
+
+&sdmmc0_det {
+	u-boot,dm-spl;
+};
+
+&emmc_bus8 {
+	u-boot,dm-spl;
+};
+
+&emmc_clk {
+	u-boot,dm-spl;
+};
+
+&emmc_cmd {
+	u-boot,dm-spl;
+};
+
+&emmc_datastrobe {
+	u-boot,dm-spl;
+};
+
 &sfc {
 	u-boot,dm-spl;
 	u-boot,spl-sfc-no-dma;
