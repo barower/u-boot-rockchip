@@ -227,10 +227,12 @@ static int rockchip_sfc_ofdata_to_platdata(struct udevice *bus)
 	struct rockchip_sfc *sfc = dev_get_plat(bus);
 
 	sfc->regbase = dev_read_addr_ptr(bus);
-	if (ofnode_read_bool(dev_ofnode(bus), "sfc-no-dma"))
-		sfc->use_dma = false;
-	else
-		sfc->use_dma = true;
+	sfc->use_dma = !dev_read_bool(bus, "rockchip,sfc-no-dma");
+
+#ifdef CONFIG_SPL_BUILD
+	if (sfc->use_dma)
+		sfc->use_dma = !dev_read_bool(bus, "u-boot,spl-sfc-no-dma");
+#endif
 
 #if CONFIG_IS_ENABLED(CLK)
 	int ret;
