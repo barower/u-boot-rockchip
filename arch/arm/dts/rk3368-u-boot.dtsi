@@ -7,6 +7,13 @@
 #include "rockchip-u-boot.dtsi"
 
 / {
+	aliases {
+		gpio0 = &gpio0;
+		gpio1 = &gpio1;
+		gpio2 = &gpio2;
+		gpio3 = &gpio3;
+	};
+
 	dmc: dmc@ff610000 {
 		compatible = "rockchip,rk3368-dmc", "syscon";
 		rockchip,cru = <&cru>;

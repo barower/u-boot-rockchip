@@ -6,6 +6,15 @@
 #include "rockchip-u-boot.dtsi"
 #include "rk3xxx-u-boot.dtsi"
 
+/ {
+	aliases {
+		gpio0 = &gpio0;
+		gpio1 = &gpio1;
+		gpio2 = &gpio2;
+		gpio3 = &gpio3;
+	};
+};
+
 &global_timer {
 	status = "okay";
 };
