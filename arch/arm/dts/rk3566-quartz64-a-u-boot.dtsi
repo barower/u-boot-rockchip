@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include "rk356x-u-boot.dtsi"
+
+/ {
+	chosen {
+		stdout-path = &uart2;
+	};
+};
+
+&gpio0 {
+	bootph-all;
+};
+
+&pcie2x1 {
+	pinctrl-0 = <&pcie20m2_pins &pcie_reset_h>;
+};
+
+&sdhci {
+	cap-mmc-highspeed;
+	mmc-ddr-1_8v;
+	pinctrl-names = "default";
+	pinctrl-0 = <&emmc_bus8 &emmc_clk &emmc_cmd &emmc_datastrobe>;
+};
+
+&sfc {
+	bootph-pre-ram;
+	u-boot,spl-sfc-no-dma;
+
+	flash@0 {
+		bootph-pre-ram;
+	};
+};
+
+&sdmmc1 {
+	status = "disabled";
+};
+
+&uart1 {
+	status = "disabled";
+};
+
+&uart2 {
+	bootph-all;
+	clock-frequency = <24000000>;
+	status = "okay";
+};
+
+/*
+ * U-Boot does not support multiple regulators using the same gpio,
+ * use vcc5v0_usb20_host to fix use of USB 2.0 port
+ */
+&usb2phy0_otg {
+	phy-supply = <&vcc5v0_usb20_host>;
+};
+
+&vcc3v3_sd {
+	bootph-pre-ram;
+};
+
+&vcc5v0_usb20_host {
+	/* Workaround until regulator implement basic reference counter */
+	regulator-always-on;
+};
+
+&vcc_sd_h {
+	bootph-all;
+};
