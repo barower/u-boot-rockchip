@@ -7,7 +7,7 @@
  */
 
 #include <common.h>
-#include <clk.h>
+#include <clk-uclass.h>
 #include <dm.h>
 #include <dm/device_compat.h>
 #include <dm/lists.h>
@@ -48,12 +48,14 @@ struct rockchip_usb2phy_port_cfg {
 
 struct rockchip_usb2phy_cfg {
 	unsigned int reg;
+	struct usb2phy_reg clkout_ctl;
 	const struct rockchip_usb2phy_port_cfg port_cfgs[USB2PHY_NUM_PORTS];
 };
 
 struct rockchip_usb2phy_port {
 	struct regmap *reg_base;
 	unsigned long port_id;
+	struct clk clk480m;
 	const struct rockchip_usb2phy_port_cfg *port_cfg;
 };
 
@@ -61,6 +63,7 @@ struct rockchip_usb2phy {
 	struct regmap *reg_base;
 	struct clk phyclk;
 	const struct rockchip_usb2phy_cfg *phy_cfg;
+	int enable_count;
 };
 
 static inline int property_enable(struct regmap *base,
@@ -78,10 +81,32 @@ static inline int property_enable(struct regmap *base,
 	return regmap_write(base, reg->offset, val);
 }
 
+static inline bool property_enabled(struct regmap *base,
+				    const struct usb2phy_reg *reg)
+{
+	unsigned int val, mask, tmp;
+
+	if (!reg->offset && !reg->enable && !reg->disable)
+		return false;
+
+	regmap_read(base, reg->offset, &val);
+	mask = GENMASK(reg->bitend, reg->bitstart);
+	tmp = (val & mask) >> reg->bitstart;
+
+	return tmp == reg->enable;
+}
+
 static int rockchip_usb2phy_power_on(struct phy *phy)
 {
 	struct rockchip_usb2phy_port *priv = dev_get_priv(phy->dev);
 	const struct rockchip_usb2phy_port_cfg *port_cfg = priv->port_cfg;
+	int ret;
+
+	ret = clk_enable(&priv->clk480m);
+	if (ret && ret != -ENOSYS) {
+		dev_err(phy->dev, "failed to enable clk480m (ret=%d)\n", ret);
+		return ret;
+	}
 
 	property_enable(priv->reg_base, &port_cfg->phy_sus, false);
 
@@ -97,6 +122,8 @@ static int rockchip_usb2phy_power_off(struct phy *phy)
 	const struct rockchip_usb2phy_port_cfg *port_cfg = priv->port_cfg;
 
 	property_enable(priv->reg_base, &port_cfg->phy_sus, true);
+
+	clk_disable(&priv->clk480m);
 
 	return 0;
 }
@@ -147,10 +174,57 @@ static struct phy_ops rockchip_usb2phy_port_ops = {
 	.of_xlate = rockchip_usb2phy_of_xlate,
 };
 
+static ulong rockchip_usb2phy_clk_round_rate(struct clk *clk, ulong rate)
+{
+	return 480000000;
+}
+
+static int rockchip_usb2phy_clk_enable(struct clk *clk)
+{
+	struct rockchip_usb2phy *priv = dev_get_priv(clk->dev);
+	const struct usb2phy_reg *clkout_ctl = &priv->phy_cfg->clkout_ctl;
+
+	/* turn on 480m clk output if it is off */
+	if (!property_enabled(priv->reg_base, clkout_ctl)) {
+		property_enable(priv->reg_base, clkout_ctl, true);
+
+		/* waiting for the clk to become stable */
+		udelay(1300);
+	}
+
+	++priv->enable_count;
+
+	return 0;
+}
+
+static int rockchip_usb2phy_clk_disable(struct clk *clk)
+{
+	struct rockchip_usb2phy *priv = dev_get_priv(clk->dev);
+	const struct usb2phy_reg *clkout_ctl = &priv->phy_cfg->clkout_ctl;
+
+	if (--priv->enable_count > 0)
+		return 0;
+
+	/* turn off 480m clk output */
+	property_enable(priv->reg_base, clkout_ctl, false);
+
+	priv->enable_count = 0;
+
+	return 0;
+}
+
+static struct clk_ops rockchip_usb2phy_ops = {
+	.round_rate = rockchip_usb2phy_clk_round_rate,
+	.enable = rockchip_usb2phy_clk_enable,
+	.disable = rockchip_usb2phy_clk_disable,
+};
+
 static int rockchip_usb2phy_port_probe(struct udevice *dev)
 {
 	struct rockchip_usb2phy_port *priv = dev_get_priv(dev);
 	struct rockchip_usb2phy *p_priv = dev_get_priv(dev->parent);
+	struct udevice *dev_clk;
+	int ret;
 
 	if (!p_priv || !p_priv->phy_cfg)
 		return -EINVAL;
@@ -162,7 +236,15 @@ static int rockchip_usb2phy_port_probe(struct udevice *dev)
 	else
 		return -EINVAL;
 
+	ret = uclass_get_device_by_ofnode(UCLASS_CLK, dev_ofnode(dev->parent),
+					  &dev_clk);
+	if (ret) {
+		dev_err(dev, "failed to get the clk480m (ret=%d)\n", ret);
+		return ret;
+	}
+
 	priv->reg_base = p_priv->reg_base;
+	priv->clk480m.dev = dev_clk;
 	priv->port_cfg = &p_priv->phy_cfg->port_cfgs[priv->port_id];
 
 	return 0;
@@ -254,6 +336,7 @@ static int rockchip_usb2phy_bind(struct udevice *dev)
 static const struct rockchip_usb2phy_cfg rk3399_phy_cfgs[] = {
 	{
 		.reg		= 0xe450,
+		.clkout_ctl	= { 0xe450, 4, 4, 1, 0 },
 		.port_cfgs	= {
 			[USB2PHY_PORT_OTG] = {
 				.phy_sus	= { 0xe454, 1, 0, 2, 1 },
@@ -275,6 +358,7 @@ static const struct rockchip_usb2phy_cfg rk3399_phy_cfgs[] = {
 	},
 	{
 		.reg		= 0xe460,
+		.clkout_ctl	= { 0xe460, 4, 4, 1, 0 },
 		.port_cfgs	= {
 			[USB2PHY_PORT_OTG] = {
 				.phy_sus        = { 0xe464, 1, 0, 2, 1 },
@@ -300,6 +384,7 @@ static const struct rockchip_usb2phy_cfg rk3399_phy_cfgs[] = {
 static const struct rockchip_usb2phy_cfg rk3568_phy_cfgs[] = {
 	{
 		.reg		= 0xfe8a0000,
+		.clkout_ctl	= { 0x0008, 4, 4, 1, 0 },
 		.port_cfgs	= {
 			[USB2PHY_PORT_OTG] = {
 				.phy_sus	= { 0x0000, 8, 0, 0x052, 0x1d1 },
@@ -325,6 +410,7 @@ static const struct rockchip_usb2phy_cfg rk3568_phy_cfgs[] = {
 	},
 	{
 		.reg		= 0xfe8b0000,
+		.clkout_ctl	= { 0x0008, 4, 4, 1, 0 },
 		.port_cfgs	= {
 			[USB2PHY_PORT_OTG] = {
 				.phy_sus	= { 0x0000, 8, 0, 0x1d2, 0x1d1 },
@@ -350,6 +436,7 @@ static const struct rockchip_usb2phy_cfg rk3568_phy_cfgs[] = {
 static const struct rockchip_usb2phy_cfg rk3588_phy_cfgs[] = {
 	{
 		.reg		= 0x0000,
+		.clkout_ctl	= { 0x0000, 0, 0, 1, 0 },
 		.port_cfgs	= {
 			[USB2PHY_PORT_OTG] = {
 				.phy_sus	= { 0x000c, 11, 11, 0, 1 },
@@ -362,6 +449,7 @@ static const struct rockchip_usb2phy_cfg rk3588_phy_cfgs[] = {
 	},
 	{
 		.reg		= 0x4000,
+		.clkout_ctl	= { 0x0000, 0, 0, 1, 0 },
 		.port_cfgs	= {
 			[USB2PHY_PORT_OTG] = {
 				.phy_sus	= { 0x000c, 11, 11, 0, 0 },
@@ -374,6 +462,7 @@ static const struct rockchip_usb2phy_cfg rk3588_phy_cfgs[] = {
 	},
 	{
 		.reg		= 0x8000,
+		.clkout_ctl	= { 0x0000, 0, 0, 1, 0 },
 		.port_cfgs	= {
 			[USB2PHY_PORT_HOST] = {
 				.phy_sus	= { 0x0008, 2, 2, 0, 1 },
@@ -386,6 +475,7 @@ static const struct rockchip_usb2phy_cfg rk3588_phy_cfgs[] = {
 	},
 	{
 		.reg		= 0xc000,
+		.clkout_ctl	= { 0x0000, 0, 0, 1, 0 },
 		.port_cfgs	= {
 			[USB2PHY_PORT_HOST] = {
 				.phy_sus	= { 0x0008, 2, 2, 0, 1 },
@@ -425,9 +515,10 @@ U_BOOT_DRIVER(rockchip_usb2phy_port) = {
 
 U_BOOT_DRIVER(rockchip_usb2phy) = {
 	.name		= "rockchip_usb2phy",
-	.id		= UCLASS_NOP,
+	.id		= UCLASS_CLK,
 	.of_match	= rockchip_usb2phy_ids,
 	.bind		= rockchip_usb2phy_bind,
 	.probe		= rockchip_usb2phy_probe,
 	.priv_auto	= sizeof(struct rockchip_usb2phy),
+	.ops		= &rockchip_usb2phy_ops,
 };
