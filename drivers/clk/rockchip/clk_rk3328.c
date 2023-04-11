@@ -765,6 +765,8 @@ static int rk3328_gmac2io_ext_set_parent(struct clk *clk, struct clk *parent)
 
 static int rk3328_clk_set_parent(struct clk *clk, struct clk *parent)
 {
+	struct rk3328_clk_priv *priv = dev_get_priv(clk->dev);
+
 	switch (clk->id) {
 	case SCLK_MAC2IO:
 		return rk3328_gmac2io_set_parent(clk, parent);
@@ -776,6 +778,12 @@ static int rk3328_clk_set_parent(struct clk *clk, struct clk *parent)
 	case SCLK_UART0:
 	case SCLK_UART1:
 	case SCLK_UART2:
+		return 0;
+	case USB480M:
+		if (!strcmp(parent->dev->name, "xin24m"))
+			rk_setreg(&priv->cru->misc, BIT(15));
+		else
+			rk_clrreg(&priv->cru->misc, BIT(15));
 		return 0;
 	}
 
