@@ -61,7 +61,7 @@ static struct phy_counts *phy_get_counts(struct phy *phy)
 	return NULL;
 }
 
-static int phy_alloc_counts(struct phy *phy)
+static int phy_alloc_counts(struct phy *phy, struct udevice *supply)
 {
 	struct list_head *uc_priv;
 	struct phy_counts *counts;
@@ -79,6 +79,7 @@ static int phy_alloc_counts(struct phy *phy)
 	counts->id = phy->id;
 	counts->power_on_count = 0;
 	counts->init_count = 0;
+	counts->supply = supply;
 	list_add(&counts->list, uc_priv);
 
 	return 0;
@@ -126,7 +127,7 @@ int generic_phy_get_by_index_nodev(ofnode node, int index, struct phy *phy)
 {
 	struct ofnode_phandle_args args;
 	struct phy_ops *ops;
-	struct udevice *phydev;
+	struct udevice *phydev, *supply = NULL;
 	int i, ret;
 
 	debug("%s(node=%s, index=%d, phy=%p)\n",
@@ -175,7 +176,17 @@ int generic_phy_get_by_index_nodev(ofnode node, int index, struct phy *phy)
 		goto err;
 	}
 
-	ret = phy_alloc_counts(phy);
+	if (CONFIG_IS_ENABLED(DM_REGULATOR)) {
+		ret = device_get_supply_regulator(phydev, "phy-supply",
+						  &supply);
+		if (ret && ret != -ENOENT) {
+			debug("%s: device_get_supply_regulator failed: %d\n",
+			      __func__, ret);
+			goto err;
+		}
+	}
+
+	ret = phy_alloc_counts(phy, supply);
 	if (ret) {
 		debug("phy_alloc_counts() failed: %d\n", ret);
 		goto err;
@@ -227,12 +238,6 @@ int generic_phy_init(struct phy *phy)
 		return 0;
 	}
 
-#if CONFIG_IS_ENABLED(DM_REGULATOR)
-	device_get_supply_regulator(phy->dev, "phy-supply", &counts->supply);
-	if (IS_ERR(counts->supply))
-		dev_dbg(phy->dev, "no phy-supply property found\n");
-#endif
-
 	ret = ops->init(phy);
 	if (ret)
 		dev_err(phy->dev, "PHY: Failed to init %s: %d.\n",
@@ -281,12 +286,6 @@ int generic_phy_exit(struct phy *phy)
 		return 0;
 	}
 
-#if CONFIG_IS_ENABLED(DM_REGULATOR)
-	if (!IS_ERR_OR_NULL(counts->supply)) {
-		ret = regulator_set_enable(counts->supply, false);
-		dev_dbg(phy->dev, "supply disable status: %d\n", ret);
-	}
-#endif
 	ret = ops->exit(phy);
 	if (ret)
 		dev_err(phy->dev, "PHY: Failed to exit %s: %d.\n",
@@ -315,21 +314,23 @@ int generic_phy_power_on(struct phy *phy)
 		return 0;
 	}
 
-#if CONFIG_IS_ENABLED(DM_REGULATOR)
-	if (!IS_ERR_OR_NULL(counts->supply)) {
-		ret = regulator_set_enable(counts->supply, true);
-		dev_dbg(phy->dev, "supply enable status: %d\n", ret);
+	ret = regulator_set_enable_if_allowed(counts->supply, true);
+	if (ret && ret != -ENOSYS) {
+		dev_err(phy->dev, "PHY: Failed to enable regulator %s: %d.\n",
+			counts->supply->name, ret);
+		return ret;
 	}
-#endif
 
 	ret = ops->power_on(phy);
-	if (ret)
+	if (ret) {
 		dev_err(phy->dev, "PHY: Failed to power on %s: %d.\n",
 			phy->dev->name, ret);
-	else
-		counts->power_on_count = 1;
+		regulator_set_enable_if_allowed(counts->supply, false);
+		return ret;
+	}
+	counts->power_on_count = 1;
 
-	return ret;
+	return 0;
 }
 
 int generic_phy_power_off(struct phy *phy)
@@ -353,13 +354,19 @@ int generic_phy_power_off(struct phy *phy)
 	}
 
 	ret = ops->power_off(phy);
-	if (ret)
+	if (ret) {
 		dev_err(phy->dev, "PHY: Failed to power off %s: %d.\n",
 			phy->dev->name, ret);
-	else
-		counts->power_on_count = 0;
+		return ret;
+	}
+	counts->power_on_count = 0;
 
-	return ret;
+	ret = regulator_set_enable_if_allowed(counts->supply, false);
+	if (ret && ret != -ENOSYS)
+		dev_err(phy->dev, "PHY: Failed to disable regulator %s: %d.\n",
+			counts->supply->name, ret);
+
+	return 0;
 }
 
 int generic_phy_configure(struct phy *phy, void *params)
