@@ -384,7 +384,7 @@ static int rockchip_pcie_set_vpcie(struct udevice *dev)
 	int ret;
 
 	if (priv->vpcie3v3) {
-		ret = regulator_set_enable(priv->vpcie3v3, true);
+		ret = regulator_set_enable_if_allowed(priv->vpcie3v3, true);
 		if (ret) {
 			dev_err(dev, "failed to enable vpcie3v3 (ret=%d)\n",
 				ret);
@@ -393,7 +393,7 @@ static int rockchip_pcie_set_vpcie(struct udevice *dev)
 	}
 
 	if (priv->vpcie1v8) {
-		ret = regulator_set_enable(priv->vpcie1v8, true);
+		ret = regulator_set_enable_if_allowed(priv->vpcie1v8, true);
 		if (ret) {
 			dev_err(dev, "failed to enable vpcie1v8 (ret=%d)\n",
 				ret);
@@ -402,7 +402,7 @@ static int rockchip_pcie_set_vpcie(struct udevice *dev)
 	}
 
 	if (priv->vpcie0v9) {
-		ret = regulator_set_enable(priv->vpcie0v9, true);
+		ret = regulator_set_enable_if_allowed(priv->vpcie0v9, true);
 		if (ret) {
 			dev_err(dev, "failed to enable vpcie0v9 (ret=%d)\n",
 				ret);
@@ -414,10 +414,10 @@ static int rockchip_pcie_set_vpcie(struct udevice *dev)
 
 err_disable_1v8:
 	if (priv->vpcie1v8)
-		regulator_set_enable(priv->vpcie1v8, false);
+		regulator_set_enable_if_allowed(priv->vpcie1v8, false);
 err_disable_3v3:
 	if (priv->vpcie3v3)
-		regulator_set_enable(priv->vpcie3v3, false);
+		regulator_set_enable_if_allowed(priv->vpcie3v3, false);
 	return ret;
 }
 
@@ -525,20 +525,26 @@ static int rockchip_pcie_probe(struct udevice *dev)
 
 	ret = rockchip_pcie_parse_dt(dev);
 	if (ret)
-		return ret;
+		goto err;
 
 	ret = rockchip_pcie_set_vpcie(dev);
 	if (ret)
-		return ret;
+		goto err;
 
 	ret = rockchip_pcie_init_port(dev);
 	if (ret)
-		return ret;
+		goto err;
 
 	dev_info(dev, "PCIE-%d: Link up (Bus%d)\n",
 		 dev_seq(dev), hose->first_busno);
 
 	return 0;
+
+err:
+	if (dm_gpio_is_valid(&priv->ep_gpio))
+		dm_gpio_free(dev, &priv->ep_gpio);
+
+	return ret;
 }
 
 static const struct dm_pci_ops rockchip_pcie_ops = {

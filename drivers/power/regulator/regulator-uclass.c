@@ -195,7 +195,7 @@ int regulator_set_enable_if_allowed(struct udevice *dev, bool enable)
 	int ret;
 
 	ret = regulator_set_enable(dev, enable);
-	if (ret == -ENOSYS || ret == -EACCES)
+	if (ret == -ENOSYS || ret == -EACCES || ret == -EALREADY)
 		return 0;
 
 	return ret;
