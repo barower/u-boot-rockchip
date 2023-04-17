@@ -31,6 +31,17 @@
 	};
 };
 
+&combphy0_ps {
+	status = "okay";
+};
+
+&pcie2x1l2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie_reset_h>;
+	reset-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
 &sdmmc {
 	bus-width = <4>;
 	status = "okay";
@@ -65,6 +76,12 @@
 
 &pinctrl {
 	bootph-all;
+
+	pcie {
+		pcie_reset_h: pcie-reset-h {
+			rockchip,pins = <3 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 
 	usb {
 		vcc5v0_host_en: vcc5v0-host-en {
