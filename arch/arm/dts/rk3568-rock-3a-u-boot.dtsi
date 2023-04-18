@@ -34,3 +34,7 @@
 	bootph-all;
 	status = "okay";
 };
+
+&usb_host0_xhci {
+	dr_mode = "host";
+};
