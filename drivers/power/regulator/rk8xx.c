@@ -15,6 +15,7 @@
 #include <power/rk8xx_pmic.h>
 #include <power/pmic.h>
 #include <power/regulator.h>
+#include <linux/delay.h>
 
 #ifndef CONFIG_SPL_BUILD
 #define ENABLE_DRIVER
@@ -615,6 +616,9 @@ static int _ldo_set_enable(struct udevice *pmic, int ldo, bool enable)
 		ret = pmic_reg_write(pmic, en_reg, value);
 		break;
 	}
+
+	if (enable)
+		udelay(500);
 
 	return ret;
 }
