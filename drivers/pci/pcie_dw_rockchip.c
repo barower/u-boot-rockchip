@@ -147,6 +147,32 @@ static inline void rk_pcie_writel_apb(struct rk_pcie *rk_pcie, u32 reg,
 }
 
 /**
+ * The BARs of bridge should be hidden during enumeration to avoid
+ * allocation of the entire memory region by PCIe core on RK3568.
+ */
+static bool rk_pcie_hide_rc_bar(struct pcie_dw *pcie, pci_dev_t bdf,
+				uint offset)
+{
+	int bus = PCI_BUS(bdf) - pcie->first_busno;
+
+	return bus == 0 && PCI_DEV(bdf) == 0 && PCI_FUNC(bdf) == 0 &&
+	       offset >= PCI_BASE_ADDRESS_0 && offset <= PCI_BASE_ADDRESS_1;
+}
+
+static int rk_pcie_read_config(const struct udevice *bus, pci_dev_t bdf,
+			       uint offset, ulong *valuep,
+			       enum pci_size_t size)
+{
+	struct pcie_dw *pcie = dev_get_priv(bus);
+	int ret = pcie_dw_read_config(bus, bdf, offset, valuep, size);
+
+	if (!ret && rk_pcie_hide_rc_bar(pcie, bdf, offset))
+		*valuep = pci_get_ff(size);
+
+	return ret;
+}
+
+/**
  * rk_pcie_configure() - Configure link capabilities and speed
  *
  * @rk_pcie: Pointer to the PCI controller state
@@ -476,7 +502,7 @@ rockchip_pcie_probe_err_init_port:
 }
 
 static const struct dm_pci_ops rockchip_pcie_ops = {
-	.read_config	= pcie_dw_read_config,
+	.read_config	= rk_pcie_read_config,
 	.write_config	= pcie_dw_write_config,
 };
 
