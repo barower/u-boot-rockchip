@@ -7,6 +7,10 @@
 #include "rk356x-u-boot.dtsi"
 
 / {
+	aliases {
+		spi0 = &sfc;
+	};
+
 	chosen {
 		stdout-path = &uart2;
 		u-boot,spl-boot-order = "same-as-spl", &sdmmc0, &sdhci;
@@ -30,6 +34,10 @@
 };
 
 &uart2m0_xfer {
+	bootph-pre-ram;
+};
+
+&fspi_pins {
 	bootph-pre-ram;
 };
 
@@ -63,6 +71,23 @@
 
 &emmc_datastrobe {
 	bootph-pre-ram;
+};
+
+&sfc {
+	bootph-pre-ram;
+	u-boot,spl-sfc-no-dma;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	flash@0 {
+		bootph-pre-ram;
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <24000000>;
+		spi-rx-bus-width = <4>;
+		spi-tx-bus-width = <1>;
+	};
 };
 
 &sdhci {
