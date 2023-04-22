@@ -61,6 +61,14 @@
 	bootph-all;
 };
 
+&pcfg_pull_none {
+	bootph-all;
+};
+
+&uart2m0_xfer {
+	bootph-all;
+};
+
 &sdmmc_bus4 {
 	bootph-all;
 };
@@ -74,6 +82,26 @@
 };
 
 &sdmmc_det {
+	bootph-all;
+};
+
+&emmc_bus8 {
+	bootph-all;
+};
+
+&emmc_clk {
+	bootph-all;
+};
+
+&emmc_cmd {
+	bootph-all;
+};
+
+&emmc_data_strobe {
+	bootph-all;
+};
+
+&emmc_rstnout {
 	bootph-all;
 };
 
