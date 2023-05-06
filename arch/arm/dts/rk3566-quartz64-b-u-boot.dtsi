@@ -8,7 +8,13 @@
 	};
 
 	chosen {
+#if defined(CONFIG_DEBUG_UART_BASE) && (CONFIG_DEBUG_UART_BASE == 0xfe660000)
 		stdout-path = &uart2;
+#elif defined(CONFIG_DEBUG_UART_BASE) && (CONFIG_DEBUG_UART_BASE == 0xfe690000)
+		stdout-path = &uart5;
+#elif defined(CONFIG_DEBUG_UART_BASE) && (CONFIG_DEBUG_UART_BASE == 0xfe6d0000)
+		stdout-path = &uart9;
+#endif
 	};
 };
 
@@ -93,6 +99,38 @@
 	clock-frequency = <24000000>;
 	status = "okay";
 };
+
+#if defined(CONFIG_DEBUG_UART_BASE) && (CONFIG_DEBUG_UART_BASE == 0xfe690000)
+/*
+ * uart5_m1 is exposed on PI40
+ * pin 32 - uart5_tx_m1
+ * pin 33 - uart5_rx_m1
+ */
+&uart5m1_xfer {
+	bootph-all;
+};
+&uart5 {
+	bootph-all;
+	clock-frequency = <24000000>;
+	pinctrl-0 = <&uart5m1_xfer>;
+	status = "okay";
+};
+#elif defined(CONFIG_DEBUG_UART_BASE) && (CONFIG_DEBUG_UART_BASE == 0xfe6d0000)
+/*
+ * uart9_m1 is exposed on PI40
+ * pin 21 - uart9_tx_m1
+ * pin 24 - uart9_rx_m1
+ */
+&uart9m1_xfer {
+	bootph-all;
+};
+&uart9 {
+	bootph-all;
+	clock-frequency = <24000000>;
+	pinctrl-0 = <&uart9m1_xfer>;
+	status = "okay";
+};
+#endif
 
 &usb_host0_xhci {
 	dr_mode = "host";
