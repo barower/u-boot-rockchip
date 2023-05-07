@@ -9,20 +9,13 @@
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
-#include <asm/global_data.h>
 #include <dm/device_compat.h>
 #include <dm/lists.h>
 #include <generic-phy.h>
-#include <reset.h>
+#include <regmap.h>
 #include <syscon.h>
-#include <asm/gpio.h>
-#include <asm/io.h>
-#include <linux/iopoll.h>
 #include <asm/arch-rockchip/clock.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
-#define usleep_range(a, b) udelay((b))
 #define BIT_WRITEABLE_SHIFT	16
 
 enum rockchip_usb2phy_port_id {
@@ -58,53 +51,50 @@ struct rockchip_usb2phy_cfg {
 	const struct rockchip_usb2phy_port_cfg port_cfgs[USB2PHY_NUM_PORTS];
 };
 
+struct rockchip_usb2phy_port {
+	struct regmap *reg_base;
+	unsigned long port_id;
+	const struct rockchip_usb2phy_port_cfg *port_cfg;
+};
+
 struct rockchip_usb2phy {
-	void *reg_base;
+	struct regmap *reg_base;
 	struct clk phyclk;
 	const struct rockchip_usb2phy_cfg *phy_cfg;
 };
 
-static inline int property_enable(void *reg_base,
+static inline int property_enable(struct regmap *base,
 				  const struct usb2phy_reg *reg, bool en)
 {
 	unsigned int val, mask, tmp;
+
+	if (!reg->offset && !reg->enable && !reg->disable)
+		return 0;
 
 	tmp = en ? reg->enable : reg->disable;
 	mask = GENMASK(reg->bitend, reg->bitstart);
 	val = (tmp << reg->bitstart) | (mask << BIT_WRITEABLE_SHIFT);
 
-	return writel(val, reg_base + reg->offset);
-}
-
-static const
-struct rockchip_usb2phy_port_cfg *us2phy_get_port(struct phy *phy)
-{
-	struct udevice *parent = dev_get_parent(phy->dev);
-	struct rockchip_usb2phy *priv = dev_get_priv(parent);
-	const struct rockchip_usb2phy_cfg *phy_cfg = priv->phy_cfg;
-
-	return &phy_cfg->port_cfgs[phy->id];
+	return regmap_write(base, reg->offset, val);
 }
 
 static int rockchip_usb2phy_power_on(struct phy *phy)
 {
-	struct udevice *parent = dev_get_parent(phy->dev);
-	struct rockchip_usb2phy *priv = dev_get_priv(parent);
-	const struct rockchip_usb2phy_port_cfg *port_cfg = us2phy_get_port(phy);
+	struct rockchip_usb2phy_port *priv = dev_get_priv(phy->dev);
+	const struct rockchip_usb2phy_port_cfg *port_cfg = priv->port_cfg;
 
 	property_enable(priv->reg_base, &port_cfg->phy_sus, false);
 
 	/* waiting for the utmi_clk to become stable */
-	usleep_range(1500, 2000);
+	mdelay(2);
 
 	return 0;
 }
 
 static int rockchip_usb2phy_power_off(struct phy *phy)
 {
-	struct udevice *parent = dev_get_parent(phy->dev);
-	struct rockchip_usb2phy *priv = dev_get_priv(parent);
-	const struct rockchip_usb2phy_port_cfg *port_cfg = us2phy_get_port(phy);
+	struct rockchip_usb2phy_port *priv = dev_get_priv(phy->dev);
+	const struct rockchip_usb2phy_port_cfg *port_cfg = priv->port_cfg;
 
 	property_enable(priv->reg_base, &port_cfg->phy_sus, true);
 
@@ -113,34 +103,28 @@ static int rockchip_usb2phy_power_off(struct phy *phy)
 
 static int rockchip_usb2phy_init(struct phy *phy)
 {
-	struct udevice *parent = dev_get_parent(phy->dev);
-	struct rockchip_usb2phy *priv = dev_get_priv(parent);
-	const struct rockchip_usb2phy_port_cfg *port_cfg = us2phy_get_port(phy);
+	struct rockchip_usb2phy_port *priv = dev_get_priv(phy->dev);
+	struct rockchip_usb2phy *p_priv = dev_get_priv(phy->dev->parent);
+	const struct rockchip_usb2phy_port_cfg *port_cfg = priv->port_cfg;
 	int ret;
 
-	ret = clk_enable(&priv->phyclk);
+	ret = clk_enable(&p_priv->phyclk);
 	if (ret && ret != -ENOSYS) {
 		dev_err(phy->dev, "failed to enable phyclk (ret=%d)\n", ret);
 		return ret;
 	}
 
-	if (phy->id == USB2PHY_PORT_OTG) {
-		property_enable(priv->reg_base, &port_cfg->bvalid_det_clr, true);
-		property_enable(priv->reg_base, &port_cfg->bvalid_det_en, true);
-	} else if (phy->id == USB2PHY_PORT_HOST) {
-		property_enable(priv->reg_base, &port_cfg->bvalid_det_clr, true);
-		property_enable(priv->reg_base, &port_cfg->bvalid_det_en, true);
-	}
+	property_enable(priv->reg_base, &port_cfg->bvalid_det_clr, true);
+	property_enable(priv->reg_base, &port_cfg->bvalid_det_en, true);
 
 	return 0;
 }
 
 static int rockchip_usb2phy_exit(struct phy *phy)
 {
-	struct udevice *parent = dev_get_parent(phy->dev);
-	struct rockchip_usb2phy *priv = dev_get_priv(parent);
+	struct rockchip_usb2phy *p_priv = dev_get_priv(phy->dev->parent);
 
-	clk_disable(&priv->phyclk);
+	clk_disable(&p_priv->phyclk);
 
 	return 0;
 }
@@ -148,19 +132,14 @@ static int rockchip_usb2phy_exit(struct phy *phy)
 static int rockchip_usb2phy_of_xlate(struct phy *phy,
 				     struct ofnode_phandle_args *args)
 {
-	const char *name = phy->dev->name;
+	struct rockchip_usb2phy_port *priv = dev_get_priv(phy->dev);
 
-	if (!strcasecmp(name, "host-port"))
-		phy->id = USB2PHY_PORT_HOST;
-	else if (!strcasecmp(name, "otg-port"))
-		phy->id = USB2PHY_PORT_OTG;
-	else
-		dev_err(phy->dev, "improper %s device\n", name);
+	phy->id = priv->port_id;
 
 	return 0;
 }
 
-static struct phy_ops rockchip_usb2phy_ops = {
+static struct phy_ops rockchip_usb2phy_port_ops = {
 	.init = rockchip_usb2phy_init,
 	.exit = rockchip_usb2phy_exit,
 	.power_on = rockchip_usb2phy_power_on,
@@ -168,52 +147,79 @@ static struct phy_ops rockchip_usb2phy_ops = {
 	.of_xlate = rockchip_usb2phy_of_xlate,
 };
 
-static int rockchip_usb2phy_probe(struct udevice *dev)
+static int rockchip_usb2phy_port_probe(struct udevice *dev)
 {
-	struct rockchip_usb2phy *priv = dev_get_priv(dev);
-	const struct rockchip_usb2phy_cfg *phy_cfgs;
-	unsigned int reg;
-	int index, ret;
+	struct rockchip_usb2phy_port *priv = dev_get_priv(dev);
+	struct rockchip_usb2phy *p_priv = dev_get_priv(dev->parent);
 
-	priv->reg_base = syscon_get_first_range(ROCKCHIP_SYSCON_GRF);
-	if (IS_ERR(priv->reg_base))
-		return PTR_ERR(priv->reg_base);
+	if (!p_priv || !p_priv->phy_cfg)
+		return -EINVAL;
 
-	ret = ofnode_read_u32_index(dev_ofnode(dev), "reg", 0, &reg);
-	if (ret) {
-		dev_err(dev, "failed to read reg property (ret = %d)\n", ret);
-		return ret;
+	if (!strcmp(dev->name, "host-port"))
+		priv->port_id = USB2PHY_PORT_HOST;
+	else if (!strcmp(dev->name, "otg-port"))
+		priv->port_id = USB2PHY_PORT_OTG;
+	else
+		return -EINVAL;
+
+	priv->reg_base = p_priv->reg_base;
+	priv->port_cfg = &p_priv->phy_cfg->port_cfgs[priv->port_id];
+
+	return 0;
+}
+
+static const
+struct rockchip_usb2phy_cfg *rockchip_usb2phy_get_phy_cfg(struct udevice *dev)
+{
+	const struct rockchip_usb2phy_cfg *phy_cfgs =
+		(const struct rockchip_usb2phy_cfg *)dev_get_driver_data(dev);
+	u32 reg;
+	int index;
+
+	if (!phy_cfgs)
+		return NULL;
+
+	if (dev_read_u32_index(dev, "reg", 0, &reg)) {
+		dev_err(dev, "failed to read reg property\n");
+		return NULL;
 	}
 
 	/* support address_cells=2 */
-	if (reg == 0) {
-		if (ofnode_read_u32_index(dev_ofnode(dev), "reg", 1, &reg)) {
-			dev_err(dev, "%s must have reg[1]\n",
-				ofnode_get_name(dev_ofnode(dev)));
-			return -EINVAL;
-		}
+	if (reg == 0 && dev_read_u32_index(dev, "reg", 1, &reg)) {
+		dev_err(dev, "failed to read reg property\n");
+		return NULL;
 	}
-
-	phy_cfgs = (const struct rockchip_usb2phy_cfg *)
-					dev_get_driver_data(dev);
-	if (!phy_cfgs)
-		return -EINVAL;
 
 	/* find out a proper config which can be matched with dt. */
 	index = 0;
 	do {
-		if (phy_cfgs[index].reg == reg) {
-			priv->phy_cfg = &phy_cfgs[index];
-			break;
-		}
+		if (phy_cfgs[index].reg == reg)
+			return &phy_cfgs[index];
 
 		++index;
 	} while (phy_cfgs[index].reg);
 
-	if (!priv->phy_cfg) {
-		dev_err(dev, "failed find proper phy-cfg\n");
+	dev_err(dev, "failed find proper phy-cfg\n");
+	return NULL;
+}
+
+static int rockchip_usb2phy_probe(struct udevice *dev)
+{
+	struct rockchip_usb2phy *priv = dev_get_priv(dev);
+	int ret;
+
+	if (dev_read_bool(dev, "rockchip,usbgrf"))
+		priv->reg_base =
+			syscon_regmap_lookup_by_phandle(dev, "rockchip,usbgrf");
+	else
+		priv->reg_base =
+			syscon_get_regmap_by_driver_data(ROCKCHIP_SYSCON_GRF);
+	if (IS_ERR(priv->reg_base))
+		return PTR_ERR(priv->reg_base);
+
+	priv->phy_cfg = rockchip_usb2phy_get_phy_cfg(dev);
+	if (!priv->phy_cfg)
 		return -EINVAL;
-	}
 
 	ret = clk_get_by_name(dev, "phyclk", &priv->phyclk);
 	if (ret) {
@@ -226,22 +232,19 @@ static int rockchip_usb2phy_probe(struct udevice *dev)
 
 static int rockchip_usb2phy_bind(struct udevice *dev)
 {
-	struct udevice *usb2phy_dev;
 	ofnode node;
 	const char *name;
-	int ret = 0;
+	int ret;
 
 	dev_for_each_subnode(node, dev) {
-		if (!ofnode_valid(node)) {
-			dev_info(dev, "subnode %s not found\n", dev->name);
-			return -ENXIO;
-		}
+		if (!ofnode_is_enabled(node))
+			continue;
 
 		name = ofnode_get_name(node);
 		dev_dbg(dev, "subnode %s\n", name);
 
 		ret = device_bind_driver_to_node(dev, "rockchip_usb2phy_port",
-						 name, node, &usb2phy_dev);
+						 name, node, NULL);
 		if (ret) {
 			dev_err(dev,
 				"'%s' cannot bind 'rockchip_usb2phy_port'\n", name);
@@ -249,7 +252,7 @@ static int rockchip_usb2phy_bind(struct udevice *dev)
 		}
 	}
 
-	return ret;
+	return 0;
 }
 
 static const struct rockchip_usb2phy_cfg rk3399_usb2phy_cfgs[] = {
@@ -419,14 +422,16 @@ static const struct udevice_id rockchip_usb2phy_ids[] = {
 U_BOOT_DRIVER(rockchip_usb2phy_port) = {
 	.name		= "rockchip_usb2phy_port",
 	.id		= UCLASS_PHY,
-	.ops		= &rockchip_usb2phy_ops,
+	.probe		= rockchip_usb2phy_port_probe,
+	.priv_auto	= sizeof(struct rockchip_usb2phy_port),
+	.ops		= &rockchip_usb2phy_port_ops,
 };
 
 U_BOOT_DRIVER(rockchip_usb2phy) = {
-	.name	= "rockchip_usb2phy",
-	.id	= UCLASS_PHY,
-	.of_match = rockchip_usb2phy_ids,
-	.probe = rockchip_usb2phy_probe,
-	.bind = rockchip_usb2phy_bind,
+	.name		= "rockchip_usb2phy",
+	.id		= UCLASS_NOP,
+	.of_match	= rockchip_usb2phy_ids,
+	.bind		= rockchip_usb2phy_bind,
+	.probe		= rockchip_usb2phy_probe,
 	.priv_auto	= sizeof(struct rockchip_usb2phy),
 };
