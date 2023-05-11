@@ -284,6 +284,13 @@ bool rkcommon_is_header_v2(struct image_tool_params *params)
 	return (info->header_ver == RK_HEADER_V2);
 }
 
+bool rkcommon_need_spi_padding(struct image_tool_params *params)
+{
+	struct spl_info *info = rkcommon_get_spl_info(params->imagename);
+
+	return (info->header_ver == RK_HEADER_V1);
+}
+
 static void do_sha256_hash(uint8_t *buf, uint32_t size, uint8_t *out)
 {
 	sha256_context ctx;

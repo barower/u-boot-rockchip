@@ -104,4 +104,12 @@ void rkcommon_rc4_encode_spl(void *buf, unsigned int offset, unsigned int size);
 int rkcommon_vrec_header(struct image_tool_params *params,
 			 struct image_type_params *tparams);
 
+/**
+ * rkcommon_need_spi_padding() - check if spi padding is required
+ *
+ * Some socs bootrom only read the first 2KB of each 4KB page of spi flash.
+ * Return: true or false depending on spi padding being required.
+ */
+bool rkcommon_need_spi_padding(struct image_tool_params *params);
+
 #endif

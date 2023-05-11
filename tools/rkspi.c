@@ -26,6 +26,9 @@ static void rkspi_set_header(void *buf, struct stat *sbuf, int ifd,
 
 	rkcommon_set_header(buf, sbuf, ifd, params);
 
+	if (!rkcommon_need_spi_padding(params))
+		return;
+
 	/*
 	 * Spread the image out so we only use the first 2KB of each 4KB
 	 * region. This is a feature of the SPI format required by the Rockchip
@@ -61,6 +64,9 @@ static int rkspi_vrec_header(struct image_tool_params *params,
 			     struct image_type_params *tparams)
 {
 	rkcommon_vrec_header(params, tparams);
+
+	if (!rkcommon_need_spi_padding(params))
+		return 0;
 
 	/*
 	 * Converting to the SPI format (i.e. splitting each 4K page into two
