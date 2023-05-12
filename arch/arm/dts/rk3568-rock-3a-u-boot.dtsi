@@ -38,8 +38,6 @@
 
 &pcie2x1 {
 	pinctrl-0 = <&pcie20m1_pins &pcie_reset_h>;
-	/* Shared vpcie3v3-supply may cause a sys freeze, disable for now */
-	status = "disabled";
 };
 
 &pcie3x2 {
