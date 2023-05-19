@@ -170,6 +170,7 @@ dtb-$(CONFIG_ROCKCHIP_RK3568) += \
 	rk3566-radxa-cm3-io.dtb \
 	rk3568-evb.dtb \
 	rk3568-odroid-m1.dtb \
+	rk3568-radxa-e25.dtb \
 	rk3568-rock-3a.dtb
 
 dtb-$(CONFIG_ROCKCHIP_RK3588) += \
