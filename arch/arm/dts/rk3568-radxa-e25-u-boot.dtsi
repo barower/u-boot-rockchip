@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include "rk356x-u-boot.dtsi"
+
+/ {
+	chosen {
+		stdout-path = &uart2;
+	};
+};
+
+&emmc_bus8 {
+	bootph-all;
+};
+
+&emmc_clk {
+	bootph-all;
+};
+
+&emmc_cmd {
+	bootph-all;
+};
+
+&emmc_datastrobe {
+	bootph-all;
+};
+
+&pcie2x1 {
+	pinctrl-0 = <&pcie20m2_pins &pcie20_reset_h>;
+	/* Shared vpcie3v3-supply may cause a sys freeze, disable for now */
+	status = "disabled";
+};
+
+&pcie3x1 {
+	pinctrl-0 = <&pcie30x1m0_pins &pcie30x1_reset_h>;
+	/* Shared vpcie3v3-supply may cause a sys freeze, disable for now */
+	status = "disabled";
+};
+
+&pcie3x2 {
+	pinctrl-0 = <&pcie30x2m1_pins &pcie30x2_reset_h>;
+};
+
+&pinctrl {
+	bootph-all;
+
+	pcie {
+		pcie30x1_reset_h: pcie30x1-reset-h {
+			rockchip,pins = <0 RK_PC3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+};
+
+&pcfg_pull_none {
+	bootph-all;
+};
+
+&pcfg_pull_up_drv_level_2 {
+	bootph-all;
+};
+
+&pcfg_pull_up {
+	bootph-all;
+};
+
+&sdmmc0_bus4 {
+	bootph-all;
+};
+
+&sdmmc0_clk {
+	bootph-all;
+};
+
+&sdmmc0_cmd {
+	bootph-all;
+};
+
+&sdhci {
+	cap-mmc-highspeed;
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
+	mmc-hs400-enhanced-strobe;
+};
+
+&uart2m0_xfer {
+	bootph-all;
+};
+
+&uart2 {
+	bootph-all;
+	clock-frequency = <24000000>;
+	status = "okay";
+};
+
+&usb_host0_xhci {
+	dr_mode = "host";
+};
