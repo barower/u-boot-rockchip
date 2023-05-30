@@ -422,13 +422,13 @@ static int dwc3_glue_bind_common(struct udevice *parent, ofnode node)
 		dr_mode = usb_get_dr_mode(node);
 
 	switch (dr_mode) {
+#if CONFIG_IS_ENABLED(DM_USB_GADGET)
 	case USB_DR_MODE_PERIPHERAL:
 	case USB_DR_MODE_OTG:
-#if CONFIG_IS_ENABLED(DM_USB_GADGET)
 		debug("%s: dr_mode: OTG or Peripheral\n", __func__);
 		driver = "dwc3-generic-peripheral";
-#endif
 		break;
+#endif
 #if defined(CONFIG_SPL_USB_HOST) || !defined(CONFIG_SPL_BUILD)
 	case USB_DR_MODE_HOST:
 		debug("%s: dr_mode: HOST\n", __func__);
