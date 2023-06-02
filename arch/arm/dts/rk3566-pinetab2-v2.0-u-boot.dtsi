@@ -1,0 +1,123 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include "rk356x-u-boot.dtsi"
+
+/ {
+	aliases {
+		spi0 = &sfc;
+	};
+
+	chosen {
+		stdout-path = &uart2;
+	};
+};
+
+&emmc_bus8 {
+	bootph-all;
+};
+
+&emmc_clk {
+	bootph-all;
+};
+
+&emmc_cmd {
+	bootph-all;
+};
+
+&emmc_datastrobe {
+	bootph-all;
+};
+
+&emmc_rstnout {
+	bootph-all;
+};
+
+&gpio0 {
+	bootph-all;
+};
+
+&pcie2x1 {
+	pinctrl-0 = <&pcie20m2_pins &pcie_reset_h>;
+};
+
+&pinctrl {
+	bootph-all;
+
+	fspi {
+		fspi_dual_io_pins: fspi-dual-io-pins {
+			bootph-all;
+			rockchip,pins =
+				/* fspi_clk */
+				<1 RK_PD0 1 &pcfg_pull_none>,
+				/* fspi_cs0n */
+				<1 RK_PD3 1 &pcfg_pull_none>,
+				/* fspi_d0 */
+				<1 RK_PD1 1 &pcfg_pull_none>,
+				/* fspi_d1 */
+				<1 RK_PD2 1 &pcfg_pull_none>;
+		};
+	};
+};
+
+&pcfg_pull_none {
+	bootph-all;
+};
+
+&pcfg_pull_up_drv_level_2 {
+	bootph-all;
+};
+
+&pcfg_pull_up {
+	bootph-all;
+};
+
+&sdmmc0_bus4 {
+	bootph-all;
+};
+
+&sdmmc0_clk {
+	bootph-all;
+};
+
+&sdmmc0_cmd {
+	bootph-all;
+};
+
+&sdmmc0_det {
+	bootph-all;
+};
+
+&sdmmc_pwren_l {
+	bootph-all;
+};
+
+&sdhci {
+	cap-mmc-highspeed;
+	mmc-ddr-1_8v;
+};
+
+&sfc {
+	bootph-pre-ram;
+	pinctrl-names = "default";
+	pinctrl-0 = <&fspi_dual_io_pins>;
+	u-boot,spl-sfc-no-dma;
+	status = "okay";
+
+	flash@0 {
+		bootph-pre-ram;
+	};
+};
+
+&uart2m0_xfer {
+	bootph-all;
+};
+
+&uart2 {
+	bootph-all;
+	clock-frequency = <24000000>;
+	status = "okay";
+};
+
+&vcc3v3_sd {
+	bootph-pre-ram;
+};
