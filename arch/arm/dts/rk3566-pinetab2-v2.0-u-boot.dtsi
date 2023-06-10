@@ -32,6 +32,10 @@
 	bootph-all;
 };
 
+&fspi_dual_io_pins {
+	bootph-all;
+};
+
 &gpio0 {
 	bootph-all;
 };
@@ -42,21 +46,6 @@
 
 &pinctrl {
 	bootph-all;
-
-	fspi {
-		fspi_dual_io_pins: fspi-dual-io-pins {
-			bootph-all;
-			rockchip,pins =
-				/* fspi_clk */
-				<1 RK_PD0 1 &pcfg_pull_none>,
-				/* fspi_cs0n */
-				<1 RK_PD3 1 &pcfg_pull_none>,
-				/* fspi_d0 */
-				<1 RK_PD1 1 &pcfg_pull_none>,
-				/* fspi_d1 */
-				<1 RK_PD2 1 &pcfg_pull_none>;
-		};
-	};
 };
 
 &pcfg_pull_none {
@@ -98,10 +87,7 @@
 
 &sfc {
 	bootph-pre-ram;
-	pinctrl-names = "default";
-	pinctrl-0 = <&fspi_dual_io_pins>;
 	u-boot,spl-sfc-no-dma;
-	status = "okay";
 
 	flash@0 {
 		bootph-pre-ram;
