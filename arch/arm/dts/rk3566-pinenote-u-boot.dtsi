@@ -12,11 +12,12 @@
 };
 
 &sdhci {
-	max-frequency = <200000000>;
+	cap-mmc-highspeed;
+	mmc-ddr-1_8v;
 };
 
 &uart2 {
+	bootph-all;
 	clock-frequency = <24000000>;
-	u-boot,dm-pre-reloc;
 	status = "okay";
 };
