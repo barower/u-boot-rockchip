@@ -11,7 +11,6 @@
 / {
 	aliases {
 		mmc1 = &sdmmc;
-		spi0 = &sfc;
 	};
 
 	chosen {
