@@ -666,7 +666,7 @@ def ProcessImage(image, update_fdt, write_map, get_contents=True,
     missing_list = []
     image.CheckMissing(missing_list)
     if missing_list:
-        tout.warning("Image '%s' is missing external blobs and is non-functional: %s\n" %
+        tout.error("Image '%s' is missing external blobs and is non-functional: %s\n" %
                      (image.name, ' '.join([e.name for e in missing_list])))
         _ShowHelpForMissingBlobs(missing_list)
 
@@ -682,7 +682,7 @@ def ProcessImage(image, update_fdt, write_map, get_contents=True,
     image.CheckOptional(optional_list)
     if optional_list:
         tout.warning(
-            "Image '%s' is missing external blobs but is still functional: %s\n" %
+            "Image '%s' is missing optional external blobs but is still functional: %s\n" %
             (image.name, ' '.join([e.name for e in optional_list])))
         _ShowHelpForMissingBlobs(optional_list)
 
