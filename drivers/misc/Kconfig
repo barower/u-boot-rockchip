@@ -101,6 +101,13 @@ config ROCKCHIP_OTP
 	  addressing and a length or through child-nodes that are generated
 	  based on the e-fuse map retrieved from the DTS.
 
+config ROCKCHIP_IODOMAIN
+	bool "Rockchip IO-domain driver support"
+	depends on DM_REGULATOR && ARCH_ROCKCHIP
+	default y if ROCKCHIP_RK3568
+	help
+	  Enable the Rockchip IO-domain driver.
+
 config SIFIVE_OTP
 	bool "SiFive eMemory OTP driver"
 	depends on MISC
