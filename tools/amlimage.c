@@ -103,7 +103,7 @@ static int amlimage_verify_header(unsigned char *buf, int size,
 {
 	const struct amlimage_header *hdr = (void *)buf + HEADER_OFFSET;
 
-	if (size >= HEADER_OFFSET + HEADER_SIZE &&
+	if (size >= HEADER_OFFSET + HEADER_SIZE + SHA256_SUM_LEN &&
 	    hdr->magic == HEADER_MAGIC && hdr->header_size == HEADER_SIZE)
 		return 0;
 
