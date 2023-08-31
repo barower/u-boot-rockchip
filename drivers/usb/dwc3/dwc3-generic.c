@@ -540,8 +540,6 @@ int dwc3_glue_probe(struct udevice *dev)
 	} else if (ret != -ENOENT && ret != -ENODATA) {
 		debug("could not get phy (err %d)\n", ret);
 		return ret;
-	} else {
-		phy.dev = NULL;
 	}
 
 	glue->regs = dev_read_addr_size_index(dev, 0, &glue->size);
@@ -554,7 +552,7 @@ int dwc3_glue_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	if (phy.dev) {
+	if (generic_phy_valid(&phy)) {
 		ret = generic_phy_power_on(&phy);
 		if (ret)
 			return ret;
