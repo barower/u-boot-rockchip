@@ -802,6 +802,7 @@ config ARCH_OMAP2PLUS
 config ARCH_MESON
 	bool "Amlogic Meson"
 	select GPIO_EXTRA_HEADER
+	select BINMAN if SPL
 	imply DISTRO_DEFAULTS
 	imply DM_RNG
 	help

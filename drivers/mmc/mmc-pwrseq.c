@@ -20,6 +20,7 @@ int mmc_pwrseq_get_power(struct udevice *dev, struct mmc_config *cfg)
 
 static int mmc_pwrseq_set_power(struct udevice *dev, bool enable)
 {
+#if CONFIG_IS_ENABLED(DM_GPIO)
 	struct gpio_desc reset;
 	int ret;
 
@@ -30,6 +31,7 @@ static int mmc_pwrseq_set_power(struct udevice *dev, bool enable)
 	udelay(1);
 	dm_gpio_set_value(&reset, 0);
 	udelay(200);
+#endif
 
 	return 0;
 }

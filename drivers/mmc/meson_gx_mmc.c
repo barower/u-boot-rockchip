@@ -53,7 +53,8 @@ static void meson_mmc_config_clock(struct mmc *mmc)
 	/* TOFIX This should use the proper clock taken from DT */
 
 	/* 1GHz / CLK_MAX_DIV = 15,9 MHz */
-	if (mmc->clock > 16000000) {
+	/* HACK: only use 1 GHz clock source for >24 MHz clock rate */
+	if (mmc->clock > SD_EMMC_CLKSRC_24M) {
 		clk = SD_EMMC_CLKSRC_DIV2;
 		clk_src = CLK_SRC_DIV2;
 	} else {
@@ -168,7 +169,8 @@ static void meson_mmc_setup_addr(struct mmc *mmc, struct mmc_data *data)
 		data_size = data->blocks * data->blocksize;
 
 		if (data->flags == MMC_DATA_READ) {
-			data_addr = (ulong) data->dest;
+			/* HACK: read data into mmc sram */
+			data_addr = (ulong) get_regbase(mmc) + 0x200;
 			invalidate_dcache_range(data_addr,
 						data_addr + data_size);
 		} else {
@@ -203,6 +205,10 @@ static int meson_dm_mmc_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
 	ulong start;
 	int ret = 0;
 
+	/* HACK: block length is set in meson_mmc_setup_cmd, ignore command */
+	if (cmd->cmdidx == MMC_CMD_SET_BLOCKLEN)
+		return 0;
+
 	/* max block size supported by chip is 512 byte */
 	if (data && data->blocksize > 512)
 		return -EINVAL;
@@ -233,6 +239,10 @@ static int meson_dm_mmc_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
 	/* reset status bits */
 	meson_write(mmc, STATUS_MASK, MESON_SD_EMMC_STATUS);
 
+	/* HACK: copy data from mmc sram back to dest */
+	if (!ret && data && data->flags == MMC_DATA_READ)
+		memcpy(data->dest, get_regbase(mmc) + 0x200, data->blocks * data->blocksize);
+
 	return ret;
 }
 
@@ -261,42 +271,21 @@ static int meson_mmc_probe(struct udevice *dev)
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct mmc *mmc = &pdata->mmc;
 	struct mmc_config *cfg = &pdata->cfg;
-	struct clk_bulk clocks;
 	uint32_t val;
-	int ret;
-
-	/* Enable the clocks feeding the MMC controller */
-	ret = clk_get_bulk(dev, &clocks);
-	if (ret)
-		return ret;
-
-	ret = clk_enable_bulk(&clocks);
-	if (ret)
-		return ret;
 
 	cfg->voltages = MMC_VDD_33_34 | MMC_VDD_32_33 |
 			MMC_VDD_31_32 | MMC_VDD_165_195;
 	cfg->host_caps = MMC_MODE_8BIT | MMC_MODE_4BIT |
-			MMC_MODE_HS_52MHz | MMC_MODE_HS;
+			MMC_MODE_1BIT;
 	cfg->f_min = DIV_ROUND_UP(SD_EMMC_CLKSRC_24M, CLK_MAX_DIV);
-	cfg->f_max = 100000000; /* 100 MHz */
-	cfg->b_max = 511; /* max 512 - 1 blocks */
+	cfg->f_max = 6000000; /* 24 MHz */
+	cfg->b_max = 1; /* 1 block */
 	cfg->name = dev->name;
 
 	mmc->priv = pdata;
 	upriv->mmc = mmc;
 
 	mmc_set_clock(mmc, cfg->f_min, MMC_CLK_ENABLE);
-
-#ifdef CONFIG_MMC_PWRSEQ
-	/* Enable power if needed */
-	ret = mmc_pwrseq_get_power(dev, cfg);
-	if (!ret) {
-		ret = pwrseq_set_power(cfg->pwr_dev, true);
-		if (ret)
-			return ret;
-	}
-#endif
 
 	/* reset all status bits */
 	meson_write(mmc, STATUS_MASK, MESON_SD_EMMC_STATUS);
