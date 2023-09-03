@@ -53,8 +53,7 @@ static void meson_mmc_config_clock(struct mmc *mmc)
 	/* TOFIX This should use the proper clock taken from DT */
 
 	/* 1GHz / CLK_MAX_DIV = 15,9 MHz */
-	/* HACK: only use 1 GHz clock source for >24 MHz clock rate */
-	if (mmc->clock > SD_EMMC_CLKSRC_24M) {
+	if (mmc->clock > 16000000) {
 		clk = SD_EMMC_CLKSRC_DIV2;
 		clk_src = CLK_SRC_DIV2;
 	} else {
@@ -205,10 +204,6 @@ static int meson_dm_mmc_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
 	ulong start;
 	int ret = 0;
 
-	/* HACK: block length is set in meson_mmc_setup_cmd, ignore command */
-	if (cmd->cmdidx == MMC_CMD_SET_BLOCKLEN)
-		return 0;
-
 	/* max block size supported by chip is 512 byte */
 	if (data && data->blocksize > 512)
 		return -EINVAL;
@@ -271,21 +266,48 @@ static int meson_mmc_probe(struct udevice *dev)
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct mmc *mmc = &pdata->mmc;
 	struct mmc_config *cfg = &pdata->cfg;
+	struct clk_bulk clocks;
 	uint32_t val;
+	int ret;
+
+	/* Enable the clocks feeding the MMC controller */
+	ret = clk_get_bulk(dev, &clocks);
+	if (ret && ret != -ENOSYS)
+		return ret;
+
+	ret = clk_enable_bulk(&clocks);
+	if (ret && ret != -ENOSYS)
+		return ret;
 
 	cfg->voltages = MMC_VDD_33_34 | MMC_VDD_32_33 |
 			MMC_VDD_31_32 | MMC_VDD_165_195;
 	cfg->host_caps = MMC_MODE_8BIT | MMC_MODE_4BIT |
-			MMC_MODE_1BIT;
+			MMC_MODE_HS_52MHz | MMC_MODE_HS;
 	cfg->f_min = DIV_ROUND_UP(SD_EMMC_CLKSRC_24M, CLK_MAX_DIV);
-	cfg->f_max = 6000000; /* 24 MHz */
-	cfg->b_max = 1; /* 1 block */
+	cfg->f_max = 100000000; /* 100 MHz */
+	cfg->b_max = 511; /* max 512 - 1 blocks */
 	cfg->name = dev->name;
+
+	if (IS_ENABLED(CONFIG_SPL_BUILD)) {
+		cfg->host_caps &= ~(MMC_MODE_HS_52MHz | MMC_MODE_HS);
+		cfg->f_max = 6000000; /* 6 MHz */
+		cfg->b_max = 1; /* max 1 block */
+	}
 
 	mmc->priv = pdata;
 	upriv->mmc = mmc;
 
 	mmc_set_clock(mmc, cfg->f_min, MMC_CLK_ENABLE);
+
+#if CONFIG_IS_ENABLED(PWRSEQ) && IS_ENABLED(CONFIG_MMC_PWRSEQ)
+	/* Enable power if needed */
+	ret = mmc_pwrseq_get_power(dev, cfg);
+	if (!ret) {
+		ret = pwrseq_set_power(cfg->pwr_dev, true);
+		if (ret)
+			return ret;
+	}
+#endif
 
 	/* reset all status bits */
 	meson_write(mmc, STATUS_MASK, MESON_SD_EMMC_STATUS);
