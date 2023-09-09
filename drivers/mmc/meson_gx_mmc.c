@@ -267,11 +267,11 @@ static int meson_mmc_probe(struct udevice *dev)
 
 	/* Enable the clocks feeding the MMC controller */
 	ret = clk_get_bulk(dev, &clocks);
-	if (ret)
+	if (ret && ret != -ENOSYS)
 		return ret;
 
 	ret = clk_enable_bulk(&clocks);
-	if (ret)
+	if (ret && ret != -ENOSYS)
 		return ret;
 
 	cfg->voltages = MMC_VDD_33_34 | MMC_VDD_32_33 |
