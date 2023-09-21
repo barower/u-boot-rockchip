@@ -6,6 +6,17 @@
 
 #include "meson-sm1-u-boot.dtsi"
 
+/ {
+	aliases {
+                mmc0 = &sd_emmc_b;
+                mmc1 = &sd_emmc_c;
+        };
+
+	binman: binman {
+		multiple-images;
+	};
+};
+
 &ethmac {
 	snps,reset-gpio = <&gpio GPIOZ_15 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
 	snps,reset-delays-us = <0 10000 1000000>;
@@ -20,4 +31,83 @@
 
 &tflash_vdd {
 	gpio = <&gpio_ao GPIOAO_3 GPIO_OPEN_DRAIN>;
+};
+
+&apb {
+	bootph-all;
+};
+
+&sd_emmc_b {
+	bootph-all;
+};
+
+&sd_emmc_c {
+	bootph-all;
+};
+
+&binman {
+	u-boot-amlogic {
+		filename = "u-boot-amlogic.bin";
+		pad-byte = <0xff>;
+
+		mkimage {
+			filename = "bl2.bin";
+			args = "-n", "sm1", "-T", "amlimage";
+
+			u-boot-spl {
+			};
+		};
+
+		fit: fit {
+			description = "ATF and U-Boot images";
+			#address-cells = <1>;
+			fit,fdt-list = "of-list";
+			filename = "u-boot.itb";
+			fit,external-offset = <CONFIG_FIT_EXTERNAL_OFFSET>;
+			fit,align = <512>;
+			offset = <CONFIG_SPL_PAD_TO>;
+
+			images {
+				u-boot {
+					description = "U-Boot";
+					type = "standalone";
+					os = "U-Boot";
+					arch = "arm64";
+					compression = "none";
+					load = <CONFIG_TEXT_BASE>;
+					entry = <CONFIG_TEXT_BASE>;
+
+					u-boot-nodtb {
+					};
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+					hash {
+						algo = "sha256";
+					};
+#endif
+				};
+
+				@fdt-SEQ {
+					description = "fdt-NAME";
+					compression = "none";
+					type = "flat_dt";
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+					hash {
+						algo = "sha256";
+					};
+#endif
+				};
+
+			};
+
+			configurations {
+				default = "@config-DEFAULT-SEQ";
+				@config-SEQ {
+					description = "NAME.dtb";
+					fdt = "fdt-SEQ";
+					fit,firmware = "atf-1", "u-boot";
+					fit,loadables;
+				};
+			};
+		};
+	};
 };
