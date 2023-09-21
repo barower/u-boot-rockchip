@@ -25,6 +25,9 @@
 #include <asm/arch/dram-settings-gx.h>
 #endif
 #include <linux/delay.h>
+#include <asm/global_data.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /*
  * Unfourtunately all we have are old Amlogic BL2 sources (BL2 was later
@@ -441,5 +444,6 @@ int dram_init(void)
 				/* hang */ ;
 		}
 	}
+	gd->ram_size = (u32)(CONFIG_DRAM_SIZE << 20);
 	return 0;
 }

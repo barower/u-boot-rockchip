@@ -77,8 +77,14 @@ void meson_init_reserved_memory(void *fdt)
 phys_size_t get_effective_memsize(void)
 {
 	/* Size is reported in MiB, convert it in bytes */
-	return ((readl(GX_AO_SEC_GP_CFG0) & GX_AO_MEM_SIZE_MASK)
+	phys_size_t size = ((readl(GX_AO_SEC_GP_CFG0) & GX_AO_MEM_SIZE_MASK)
 			>> GX_AO_MEM_SIZE_SHIFT) * SZ_1M;
+
+	/* HACK: For some reason the size above return 0 */
+	if (!size && gd->ram_size)
+		size = gd->ram_size;
+
+	return size;
 }
 
 static struct mm_region gx_mem_map[] = {
