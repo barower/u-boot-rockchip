@@ -24,6 +24,7 @@ choice
 config MESON_GXBB
 	bool "GXBB"
 	select MESON_GX
+	select SUPPORT_SPL
 	help
 	  Select this if your SoC is an S905
 
@@ -48,6 +49,7 @@ config MESON_AXG
 config MESON_G12A
 	bool "G12A"
 	select MESON64_COMMON
+	select SUPPORT_SPL
 	help
 	  Select this if your SoC is an S905X/D2
 

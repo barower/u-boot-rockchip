@@ -168,7 +168,8 @@ static void meson_mmc_setup_addr(struct mmc *mmc, struct mmc_data *data)
 		data_size = data->blocks * data->blocksize;
 
 		if (data->flags == MMC_DATA_READ) {
-			data_addr = (ulong) data->dest;
+			/* HACK: read data into mmc sram */
+			data_addr = (ulong) get_regbase(mmc) + 0x200;
 			invalidate_dcache_range(data_addr,
 						data_addr + data_size);
 		} else {
@@ -233,6 +234,10 @@ static int meson_dm_mmc_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
 	/* reset status bits */
 	meson_write(mmc, STATUS_MASK, MESON_SD_EMMC_STATUS);
 
+	/* HACK: copy data from mmc sram back to dest */
+	if (!ret && data && data->flags == MMC_DATA_READ)
+		memcpy(data->dest, get_regbase(mmc) + 0x200, data->blocks * data->blocksize);
+
 	return ret;
 }
 
@@ -282,6 +287,12 @@ static int meson_mmc_probe(struct udevice *dev)
 	cfg->f_max = 100000000; /* 100 MHz */
 	cfg->b_max = 511; /* max 512 - 1 blocks */
 	cfg->name = dev->name;
+
+	if (IS_ENABLED(CONFIG_SPL_BUILD)) {
+		cfg->host_caps &= ~(MMC_MODE_HS_52MHz | MMC_MODE_HS);
+		cfg->f_max = 6000000; /* 6 MHz */
+		cfg->b_max = 1; /* max 1 block */
+	}
 
 	mmc->priv = pdata;
 	upriv->mmc = mmc;
