@@ -97,4 +97,34 @@ config SYS_CONFIG_NAME
 	  Based on this option include/configs/<CONFIG_SYS_CONFIG_NAME>.h header
 	  will be used for board configuration.
 
+if MESON_GX
+# DRAM
+config DRAM_CHANNEL
+	int "Number of DRAM channels to use"
+	default 2
+	help
+	  This option contains the number of DRAM channels to use. Valid options
+	  include 1 (single) and 2 (double).
+
+config DRAM_CLK
+	int "DRAM clock"
+	default 912
+	help
+	  This option contains the DRAM clock to use in MHz.
+
+config DRAM_SIZE
+	int "DRAM size"
+	default 1024
+	help
+	  This option contains the DRAM size. Units in MB.
+
+# TODO: properly set this option
+config DRAM_2T_MODE
+	int "Use DRAM 2T mode"
+	default 1
+	help
+	  Choose whenever to use 2T mode or not. 1: on, 0: off.
+
+endif
+
 endif

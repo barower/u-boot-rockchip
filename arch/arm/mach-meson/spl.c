@@ -2,6 +2,8 @@
 /*
  * Copyright (C) 2023, Ferass El Hafidi <vitali64pmemail@protonmail.com>
  */
+#include <spl.h>
+#include <asm/io.h>
 #include <asm/spl.h>
 #include <asm/arch/boot.h>
 #include <image.h>
@@ -26,6 +28,13 @@ u32 spl_boot_device(void)
 
 	panic("Boot device %d not supported\n", boot_device);
 	return BOOT_DEVICE_NONE;
+}
+
+/* To be defined in dram-${GENERATION}.c */
+__weak int dram_init(void)
+{
+	debug("spl: Please define your own dram_init() function\n");
+	return 0;
 }
 
 __weak const char *spl_board_loader_name(u32 boot_device)
@@ -67,4 +76,30 @@ __weak void spl_board_prepare_for_boot(void)
 {
 	/* HACK: stop trying to jump to 0x0 */
 	panic("Nothing to do!\n");
+}
+
+void board_init_f(ulong dummy)
+{
+	int ret;
+
+	/* BL1 doesn't append a newline char after the end of its output. */
+	putc('\n');
+
+	icache_enable();
+
+	if (CONFIG_IS_ENABLED(OF_CONTROL)) {
+		ret = spl_early_init();
+		if (ret) {
+			panic("spl_early_init() failed: %d\n", ret);
+			return;
+		}
+	}
+
+	preloader_console_init();
+
+	ret = dram_init();
+	if (ret) {
+		panic("dram_init() failed: %d\n", ret);
+		return;
+	}
 }

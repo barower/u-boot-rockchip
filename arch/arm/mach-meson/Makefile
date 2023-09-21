@@ -8,5 +8,6 @@ obj-$(CONFIG_MESON_AXG) += board-axg.o
 obj-$(CONFIG_MESON_G12A) += board-g12a.o
 obj-$(CONFIG_MESON_A1) += board-a1.o
 ifeq ($(CONFIG_SPL_BUILD),y)
+obj-$(CONFIG_MESON_GX) += dram-gx.o
 obj-y += spl.o
 endif
