@@ -229,6 +229,194 @@ static void power_init(void)
 	pwm_set_voltage(pwm_d, CONFIG_VDDEE_INIT_VOLTAGE);
 }
 
+#define HHI_SYS_CPU_CLK_CNTL1		(0xc883c000 + (0x57 << 2))
+#define HHI_MPEG_CLK_CNTL			(0xc883c000 + (0x5d << 2))
+#define HHI_SYS_CPU_CLK_CNTL		(0xc883c000 + (0x67 << 2))
+#define HHI_MPLL_CNTL6				(0xc883c000 + (0xa5 << 2))
+#define     HHI_SYS_PLL_CNTL                                   (0xc883c000 + (0xc0 << 2))
+#define     HHI_SYS_PLL_CNTL2                                  (0xc883c000 + (0xc1 << 2))
+#define     HHI_SYS_PLL_CNTL3                                  (0xc883c000 + (0xc2 << 2))
+#define     HHI_SYS_PLL_CNTL4                                  (0xc883c000 + (0xc3 << 2))
+#define     HHI_SYS_PLL_CNTL5                                  (0xc883c000 + (0xc4 << 2))
+#define     HHI_MPLL_CNTL                                      (0xc883c000 + (0xa0 << 2))
+#define     HHI_MPLL_CNTL2                                     (0xc883c000 + (0xa1 << 2))
+#define     HHI_MPLL_CNTL3                                     (0xc883c000 + (0xa2 << 2))
+#define     HHI_MPLL_CNTL4                                     (0xc883c000 + (0xa3 << 2))
+#define     HHI_MPLL_CNTL5                                     (0xc883c000 + (0xa4 << 2))
+#define     HHI_MPLL_CNTL6                                     (0xc883c000 + (0xa5 << 2))
+#define     HHI_MPLL_CNTL7                                     (0xc883c000 + (0xa6 << 2))
+#define     HHI_MPLL_CNTL8                                     (0xc883c000 + (0xa7 << 2))
+#define     HHI_MPLL_CNTL9                                     (0xc883c000 + (0xa8 << 2))
+#define     HHI_MPLL_CNTL10                                    (0xc883c000 + (0xa9 << 2))
+
+static void clocks_set_sys_cpu_clk(uint32_t freq, uint32_t pclk_ratio, uint32_t aclkm_ratio, uint32_t atclk_ratio )
+{
+	uint32_t	control = 0;
+	uint32_t	dyn_pre_mux = 0;
+	uint32_t	dyn_post_mux = 0;
+	uint32_t	dyn_div = 0;
+
+	// Make sure not busy from last setting and we currently match the last setting
+	do {
+		control = readl(HHI_SYS_CPU_CLK_CNTL);
+	} while( (control & (1 << 28)) );
+
+	control = control | (1 << 26);				// Enable
+
+	// Switching to System PLL...just change the final mux
+	if ( freq == 1 ) {
+		// wire			cntl_final_mux_sel		= control[11];
+		control = control | (1 << 11);
+	} else {
+		switch ( freq ) {
+			case	0:		// If Crystal
+							dyn_pre_mux		= 0;
+							dyn_post_mux	= 0;
+							dyn_div			= 0;	// divide by 1
+							break;
+			case	1000:	// fclk_div2
+							dyn_pre_mux		= 1;
+							dyn_post_mux	= 0;
+							dyn_div			= 0;	// divide by 1
+							break;
+			case	667:	// fclk_div3
+							dyn_pre_mux		= 2;
+							dyn_post_mux	= 0;
+							dyn_div			= 0;	// divide by 1
+							break;
+			case	500:	// fclk_div2/2
+							dyn_pre_mux		= 1;
+							dyn_post_mux	= 1;
+							dyn_div			= 1;	// Divide by 2
+							break;
+			case	333:	// fclk_div3/2
+							dyn_pre_mux		= 2;
+							dyn_post_mux	= 1;
+							dyn_div			= 1;	// divide by 2
+							break;
+			case	250:	// fclk_div2/4
+							dyn_pre_mux		= 1;
+							dyn_post_mux	= 1;
+							dyn_div			= 3;	// divide by 4
+							break;
+		}
+		if ( control & (1 << 10) ) { 	// if using Dyn mux1, set dyn mux 0
+			// Toggle bit[10] indicating a dynamic mux change
+			control = (control & ~((1 << 10) | (0x3f << 4)	| (1 << 2)	| (0x3 << 0)))
+					| ((0 << 10)
+					| (dyn_div << 4)
+					| (dyn_post_mux << 2)
+					| (dyn_pre_mux << 0));
+		} else {
+			// Toggle bit[10] indicating a dynamic mux change
+			control = (control & ~((1 << 10) | (0x3f << 20) | (1 << 18) | (0x3 << 16)))
+					| ((1 << 10)
+					| (dyn_div << 20)
+					| (dyn_post_mux << 18)
+					| (dyn_pre_mux << 16));
+		}
+		// Select Dynamic mux
+		control = control & ~(1 << 11);
+	}
+	writel(control, HHI_SYS_CPU_CLK_CNTL);
+	//
+	// Now set the divided clocks related to the System CPU
+	//
+	// This function changes the clock ratios for the
+	// PCLK, ACLKM (AXI) and ATCLK
+	//		.clk_clken0_i	( {clk_div2_en,clk_div2}	),
+	//		.clk_clken1_i	( {clk_div3_en,clk_div3}	),
+	//		.clk_clken2_i	( {clk_div4_en,clk_div4}	),
+	//		.clk_clken3_i	( {clk_div5_en,clk_div5}	),
+	//		.clk_clken4_i	( {clk_div6_en,clk_div6}	),
+	//		.clk_clken5_i	( {clk_div7_en,clk_div7}	),
+	//		.clk_clken6_i	( {clk_div8_en,clk_div8}	),
+
+	uint32_t	control1 = readl(HHI_SYS_CPU_CLK_CNTL1);
+
+	//		.cntl_PCLK_mux				( hi_sys_cpu_clk_cntl1[5:3]	 ),
+	if ( (pclk_ratio >= 2) && (pclk_ratio <= 8) ) { control1 = (control1 & ~(0x7 << 3)) | ((pclk_ratio-2) << 3) ; }
+	//		.cntl_ACLKM_clk_mux		 ( hi_sys_cpu_clk_cntl1[11:9]	),	// AXI matrix
+	if ( (aclkm_ratio >= 2) && (aclkm_ratio <= 8) ) { control1 = (control1 & ~(0x7 << 9)) | ((aclkm_ratio-2) << 9) ; }
+	//		.cntl_ATCLK_clk_mux		 ( hi_sys_cpu_clk_cntl1[8:6]	 ),
+	if ( (atclk_ratio >= 2) && (atclk_ratio <= 8) ) { control1 = (control1 & ~(0x7 << 6)) | ((atclk_ratio-2) << 6) ; }
+	writel(control1, HHI_SYS_CPU_CLK_CNTL1);
+}
+
+unsigned lock_check_loop = 0;
+
+unsigned pll_lock_check(unsigned long pll_reg, const char *pll_name){
+	/*locked: return 0, else return 1*/
+	unsigned lock = ((readl(pll_reg) >> 31) & 0x1);
+	if (lock) {
+		lock_check_loop = 0;
+	}
+	else{
+		lock_check_loop++;
+		printf("%s lock check %u\n", pll_name, lock_check_loop);
+	}
+	return !lock;
+}
+
+static void pll_init(void)
+{
+	clrbits_32(HHI_MPEG_CLK_CNTL, 1 << 8);
+	clocks_set_sys_cpu_clk(0, 0, 0, 0);
+
+	setbits_32(HHI_MPLL_CNTL6, 1 << 26);
+	udelay(100);
+
+	unsigned int sys_pll_cntl = 0;
+	sys_pll_cntl = (0<<16/*OD*/) | (1<<9/*N*/) | (1536 / 24/*M*/);
+	do {
+		setbits_32(HHI_SYS_PLL_CNTL, 1 << 29);
+		writel(0x5ac80000, HHI_SYS_PLL_CNTL2);
+		writel(0x8e452015, HHI_SYS_PLL_CNTL3);
+		writel(0x0401d40c, HHI_SYS_PLL_CNTL4);
+		writel(0x00000870, HHI_SYS_PLL_CNTL5);
+		writel(((1<<30)|(1<<29)|sys_pll_cntl), HHI_SYS_PLL_CNTL); // A9 clock
+		clrbits_32(HHI_SYS_PLL_CNTL, 1 << 29);
+		udelay(20);
+	} while (pll_lock_check(HHI_SYS_PLL_CNTL, "SYS PLL"));
+	clocks_set_sys_cpu_clk( 1, 0, 0, 0); // Connect SYS CPU to the PLL divider output
+
+	sys_pll_cntl = readl(HHI_SYS_PLL_CNTL);
+	unsigned cpu_clk = (24/ \
+		((sys_pll_cntl>>9)&0x1F)* \
+		(sys_pll_cntl&0x1FF)/ \
+		(1<<((sys_pll_cntl>>16)&0x3)));
+	/* cpu clk = 24/N*M/2^OD */
+	printf("CPU clk: %dMHz\n", cpu_clk);
+
+	writel(0x00010007, HHI_MPLL_CNTL4);
+	setbits_32(HHI_MPLL_CNTL, 1 << 29);
+	udelay(200);
+	writel(0x59C80000, HHI_MPLL_CNTL2);
+	writel(0xCA45B822, HHI_MPLL_CNTL3);
+	writel(0xB5500E1A, HHI_MPLL_CNTL5);
+	writel(0xFC454545, HHI_MPLL_CNTL6);
+	writel(((1 << 30) | (1<<29) | (3 << 9) | (250 << 0)), HHI_MPLL_CNTL);
+	clrbits_32(HHI_MPLL_CNTL, 1 << 29);
+	udelay(800);
+	setbits_32(HHI_MPLL_CNTL4, 1 << 14);
+	do {
+		if ((readl(HHI_MPLL_CNTL)&(1<<31)) != 0)
+			break;
+		setbits_32(HHI_MPLL_CNTL, 1 << 29);
+		udelay(1000);
+		clrbits_32(HHI_MPLL_CNTL, 1 << 29);
+		udelay(1000);
+	} while (pll_lock_check(HHI_MPLL_CNTL, "FIX PLL"));
+
+	writel(0xFFF << 16, HHI_MPLL_CNTL10);
+	writel(((7 << 16) | (1 << 15) | (1 << 14) | (4681 << 0)), HHI_MPLL_CNTL7);
+	writel(((readl(HHI_MPEG_CLK_CNTL) & (~((0x7 << 12) | (1 << 7) | (0x7F << 0)))) | ((5 << 12) | (1 << 7)	| (2 << 0))), HHI_MPEG_CLK_CNTL);
+	setbits_32(HHI_MPEG_CLK_CNTL, 1 << 8);
+	writel(((5 << 16) | (1 << 15) | (1 << 14) | (12524 << 0)), HHI_MPLL_CNTL8);
+
+	udelay(200);
+}
+
 void board_init_f(ulong dummy)
 {
 	int ret;
@@ -250,6 +438,7 @@ void board_init_f(ulong dummy)
 
 	if (IS_ENABLED(CONFIG_MESON_GXBB)) {
 		power_init();
+		pll_init();
 	}
 
 	ret = dram_init();
