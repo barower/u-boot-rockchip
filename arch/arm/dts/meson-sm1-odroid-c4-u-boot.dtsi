@@ -71,7 +71,7 @@
 				u-boot {
 					description = "U-Boot";
 					type = "standalone";
-					os = "U-Boot";
+					os = "u-boot";
 					arch = "arm64";
 					compression = "none";
 					load = <CONFIG_TEXT_BASE>;
@@ -79,22 +79,19 @@
 
 					u-boot-nodtb {
 					};
-#ifdef CONFIG_SPL_FIT_SIGNATURE
 					hash {
 						algo = "sha256";
 					};
-#endif
 				};
 
 				@fdt-SEQ {
 					description = "fdt-NAME";
 					compression = "none";
 					type = "flat_dt";
-#ifdef CONFIG_SPL_FIT_SIGNATURE
+
 					hash {
 						algo = "sha256";
 					};
-#endif
 				};
 
 			};
@@ -104,8 +101,8 @@
 				@config-SEQ {
 					description = "NAME.dtb";
 					fdt = "fdt-SEQ";
-					fit,firmware = "atf-1", "u-boot";
-					fit,loadables;
+					firmware = "u-boot";
+					loadables = "u-boot";
 				};
 			};
 		};

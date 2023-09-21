@@ -25,7 +25,7 @@ u32 spl_boot_device(void)
 	}
 
 	panic("Boot device %d not supported\n", boot_device);
-	return BOOT_DEVICE_RESERVED;
+	return BOOT_DEVICE_NONE;
 }
 
 __weak const char *spl_board_loader_name(u32 boot_device)
