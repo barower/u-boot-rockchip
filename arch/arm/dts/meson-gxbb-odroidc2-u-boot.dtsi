@@ -69,6 +69,7 @@
 };
 
 #define BL30_ADDR 0x10000000
+#define BL31_ADDR 0x10100000
 
 &binman {
 	u-boot-amlogic {
@@ -139,6 +140,22 @@
 					};
 				};
 
+				atf {
+					description = "ARM Trusted Firmware";
+					type = "firmware";
+					arch = "arm64";
+					os = "arm-trusted-firmware";
+					compression = "none";
+					load = <BL31_ADDR>;
+					entry = <BL31_ADDR>;
+
+					atf-bl31 {
+					};
+					hash {
+						algo = "sha256";
+					};
+				};
+
 				@fdt-SEQ {
 					description = "fdt-NAME";
 					compression = "none";
@@ -156,7 +173,7 @@
 				@config-SEQ {
 					description = "NAME.dtb";
 					fdt = "fdt-SEQ";
-					firmware = "u-boot";
+					firmware = "atf";
 					loadables = "bl30", "bl301", "u-boot";
 				};
 			};

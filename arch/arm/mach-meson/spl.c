@@ -4,10 +4,13 @@
  */
 #include <spl.h>
 #include <asm/io.h>
+#include <asm/ptrace.h>
 #include <asm/spl.h>
+#include <asm/system.h>
 #include <asm/arch/boot.h>
 #include <image.h>
 #include <vsprintf.h>
+#include <atf_common.h>
 #include <linux/delay.h>
 
 u32 spl_boot_device(void)
@@ -544,8 +547,21 @@ void board_init_f(ulong dummy)
 {
 	int ret;
 
-	/* BL1 doesn't append a newline char after the end of its output. */
-	putc('\n');
+	if (current_el() != 3) {
+		static struct entry_point_info bl31_ep_info;
+		SET_PARAM_HEAD(&bl31_ep_info, ATF_PARAM_BL31, ATF_VERSION_1, 0);
+		bl31_ep_info.pc = CONFIG_SPL_TEXT_BASE;
+		bl31_ep_info.spsr = SPSR_64(MODE_EL3, MODE_SP_ELX, DISABLE_ALL_EXECPTIONS);
+
+		struct pt_regs regs = {0};
+		regs.regs[0] = 0xC0000000;
+		regs.regs[1] = (unsigned long)&bl31_ep_info;
+
+		printf("\nRunning at EL%d, changing to EL3\n", current_el());
+		smc_call(&regs);
+	} else {
+		printf("\nRunning at EL%d\n", current_el());
+	}
 
 	icache_enable();
 
