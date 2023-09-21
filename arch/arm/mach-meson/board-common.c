@@ -153,5 +153,11 @@ int board_late_init(void)
 
 void reset_cpu(void)
 {
-	psci_system_reset();
+	if (IS_ENABLED(CONFIG_SPL_BUILD)) {
+		/* HACK: for now lets wait for interrupt forever */
+		while (1)
+			wfi();
+	} else {
+		psci_system_reset();
+	}
 }
