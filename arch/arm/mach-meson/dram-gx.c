@@ -25,9 +25,6 @@
 #include <asm/arch/dram-settings-gx.h>
 #endif
 #include <linux/delay.h>
-#include <asm/global_data.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /*
  * Unfourtunately all we have are old Amlogic BL2 sources (BL2 was later
@@ -413,6 +410,8 @@ void initialise_dram_pctl(void)
 	return;
 }
 
+#define SEC_AO_SEC_GP_CFG0		(0xda100000 + (0x90 << 2))
+
 int dram_init(void)
 {
 	debug("TPL: initialising dram\n");
@@ -422,8 +421,8 @@ int dram_init(void)
 	initialise_dram_dmc();
 
 	/* Write size */
-	writel((readl(GX_AO_SEC_GP_CFG0) & 0x0000ffff) |
-		(CONFIG_DRAM_SIZE << 16), GX_AO_SEC_GP_CFG0);
+	clrsetbits_32(SEC_AO_SEC_GP_CFG0, GX_AO_MEM_SIZE_MASK,
+		      CONFIG_DRAM_SIZE << GX_AO_MEM_SIZE_SHIFT);
 
 	debug("dram: %d MB\n", (1 << ((readl(DMC_DDR_CTRL) & 7) + 7)));
 	debug("TPL: dram init done\n");
@@ -444,6 +443,5 @@ int dram_init(void)
 				/* hang */ ;
 		}
 	}
-	gd->ram_size = (u32)(CONFIG_DRAM_SIZE << 20);
 	return 0;
 }
