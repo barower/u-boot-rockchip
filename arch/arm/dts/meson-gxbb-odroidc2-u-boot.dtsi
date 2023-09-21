@@ -68,7 +68,6 @@
 	bootph-all;
 };
 
-#define BL30_ADDR 0x10000000
 #define BL31_ADDR 0x10100000
 
 &binman {
@@ -111,11 +110,11 @@
 				};
 
 				bl30 {
-					description = "bl30";
+					description = "Secure Monitor";
 					type = "firmware";
 					arch = "arm";
 					compression = "none";
-					load = <BL30_ADDR>;
+					load = <CONFIG_TEXT_BASE>;
 
 					blob-ext {
 						filename = "bl30.bin";
@@ -126,11 +125,11 @@
 				};
 
 				bl301 {
-					description = "bl301";
+					description = "Secure Monitor";
 					type = "firmware";
 					arch = "arm";
 					compression = "none";
-					load = <BL30_ADDR>;
+					load = <CONFIG_TEXT_BASE>;
 
 					blob-ext {
 						filename = "bl301.bin";
@@ -140,7 +139,7 @@
 					};
 				};
 
-				atf {
+				bl31 {
 					description = "ARM Trusted Firmware";
 					type = "firmware";
 					arch = "arm64";
@@ -173,7 +172,7 @@
 				@config-SEQ {
 					description = "NAME.dtb";
 					fdt = "fdt-SEQ";
-					firmware = "atf";
+					firmware = "bl31";
 					loadables = "bl30", "bl301", "u-boot";
 				};
 			};
