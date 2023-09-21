@@ -68,6 +68,8 @@
 	bootph-all;
 };
 
+#define BL30_ADDR 0x10000000
+
 &binman {
 	u-boot-amlogic {
 		filename = "u-boot-amlogic.bin";
@@ -107,6 +109,36 @@
 					};
 				};
 
+				bl30 {
+					description = "bl30";
+					type = "firmware";
+					arch = "arm";
+					compression = "none";
+					load = <BL30_ADDR>;
+
+					blob-ext {
+						filename = "bl30.bin";
+					};
+					hash {
+						algo = "sha256";
+					};
+				};
+
+				bl301 {
+					description = "bl301";
+					type = "firmware";
+					arch = "arm";
+					compression = "none";
+					load = <BL30_ADDR>;
+
+					blob-ext {
+						filename = "bl301.bin";
+					};
+					hash {
+						algo = "sha256";
+					};
+				};
+
 				@fdt-SEQ {
 					description = "fdt-NAME";
 					compression = "none";
@@ -125,7 +157,7 @@
 					description = "NAME.dtb";
 					fdt = "fdt-SEQ";
 					firmware = "u-boot";
-					loadables = "u-boot";
+					loadables = "bl30", "bl301", "u-boot";
 				};
 			};
 		};
