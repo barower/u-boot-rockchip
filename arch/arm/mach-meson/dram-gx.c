@@ -100,19 +100,19 @@ void initialise_dram_dmc(void)
 #elif CONFIG_DRAM_CHANNEL == 2 /* dual channel, ddr0 & ddr1 */
 	/* TODO: Don't assume both channels are different */
 	//reg = (4 << 20) | (0 << 16) | (1 << 6);
-	reg =  (2 << 20); /* Enable rank 1 */
+	reg =  (4 << 20); /* Enable rank 1 */
 	reg |= (1 << 6);  /* Channel 0 only */
 	/* Size */
-	reg |= (0x3 << 3) | 0x3; /* Set to 1 GB for each channel */
+	reg |= (0x5 << 3) | 0x4; /* Set to 1 GB for each channel */
 	//reg |= (ddr_size_register | (ddr_size_register << 3));
 	//reg |= (ddr_size_register | (5 << 3));
 	writel(reg, DMC_DDR_CTRL);
 	/* Address map */
-	writel(11 | 31 << 5 |  0 << 10 | 14 << 15 | 15 << 20 | 16 << 25, DDR0_ADDRMAP_1);
-	writel( 0 | 12 << 5 | 13 << 10 | 29 << 15 |  0 << 20 | 30 << 25, DDR0_ADDRMAP_4);
+	//writel(11 | 31 << 5 |  0 << 10 | 14 << 15 | 15 << 20 | 16 << 25, DDR0_ADDRMAP_1);
+	//writel( 0 | 12 << 5 | 13 << 10 | 29 << 15 |  0 << 20 | 30 << 25, DDR0_ADDRMAP_4);
 	//rank0+1 same:
-	//writel(( 11| 31 << 5 | 0 << 10 | 14 << 15 | 15 << 20 | 16 << 25 ), DDR0_ADDRMAP_1);
-	//writel(( 30| 12 << 5 | 13 << 10 | 29 << 15 | 0 << 20 | 0 << 25 ), DDR0_ADDRMAP_4);
+	writel(( 11| 31 << 5 | 0 << 10 | 14 << 15 | 15 << 20 | 16 << 25 ), DDR0_ADDRMAP_1);
+	writel(( 30| 12 << 5 | 13 << 10 | 29 << 15 | 0 << 20 | 0 << 25 ), DDR0_ADDRMAP_4);
 	//ghidra:
 	//writel( 0x20f703eb, DDR0_ADDRMAP_1);
 	//writel( 0x3bbd6717, DDR0_ADDRMAP_3);
@@ -194,7 +194,7 @@ void initialise_dram_pub_prepare(void)
 	writel(PUB_DTPR1, DDR0_PUB_DTPR1);
 	// ? writel(PUB_PGCR0, DDR0_PUB_PGCR0); ?
 	writel(PUB_PGCR1, DDR0_PUB_PGCR1);
-	writel(PUB_PGCR2, DDR0_PUB_PGCR2); // RANK01_DIFFERENT!!
+	writel(PUB_PGCR2 | (1 << 28), DDR0_PUB_PGCR2); // RANK01_DIFFERENT!!
 	writel(PUB_PGCR3, DDR0_PUB_PGCR3);
 	writel(PUB_DXCCR, DDR0_PUB_DXCCR);
 
@@ -274,7 +274,6 @@ void initialise_dram_pctl(void)
 		writel(timings.refi_mddr3, DDR0_PCTL_TREFI_MEM_DDR3);
 		writel(timings.mrd, DDR0_PCTL_TMRD);
 		writel(timings.rp, DDR0_PCTL_TRP);
-		writel(timings.cke + 1, DDR0_PCTL_TCKESR);
 		writel(timings.al, DDR0_PCTL_TAL);
 		writel(timings.cwl, DDR0_PCTL_TCWL);
 		writel(timings.cl, DDR0_PCTL_TCL);
@@ -293,6 +292,7 @@ void initialise_dram_pctl(void)
 		writel(timings.cksrx, DDR0_PCTL_TCKSRX);
 		writel(timings.mod, DDR0_PCTL_TMOD);
 		writel(timings.cke, DDR0_PCTL_TCKE);
+		writel(timings.cke + 1, DDR0_PCTL_TCKESR);
 		writel(timings.zqcs, DDR0_PCTL_TZQCS);
 		writel(timings.zqcl, DDR0_PCTL_TZQCL);
 		writel(timings.xpdll, DDR0_PCTL_TXPDLL);
@@ -358,6 +358,36 @@ void initialise_dram_pctl(void)
 #if CONFIG_DRAM_CHANNEL == 1
 #error Not implemented
 #elif CONFIG_DRAM_CHANNEL == 2
+	unsigned int i=0, j=0;
+	i=(readl(DDR0_PUB_DX2LCDLR0));
+	writel(((i>>8)|(i&(0xffffff00))), DDR0_PUB_DX2LCDLR0);
+	i=(((readl(DDR0_PUB_DX2GTR))>>3)&((7<<0)));
+	j=(((readl(DDR0_PUB_DX2GTR))>>14)&((3<<0)));
+	writel(i|(i<<3)|(j<<12)|(j<<14), DDR0_PUB_DX2GTR);
+	i=(readl(DDR0_PUB_DX2LCDLR2));
+	writel(((i>>8)|(i&(0xffffff00))), DDR0_PUB_DX2LCDLR2);
+	i=(readl(DDR0_PUB_DX3LCDLR0));
+	writel(((i>>8)|(i&(0xffffff00))), DDR0_PUB_DX3LCDLR0);
+	i=(((readl(DDR0_PUB_DX3GTR))>>3)&((7<<0)));
+	j=(((readl(DDR0_PUB_DX3GTR))>>14)&((3<<0)));
+	writel(i|(i<<3)|(j<<12)|(j<<14), DDR0_PUB_DX3GTR);
+	i=(readl(DDR0_PUB_DX3LCDLR2));
+	writel(((i>>8)|(i&(0xffffff00))), DDR0_PUB_DX3LCDLR2);
+	i=(readl(DDR0_PUB_DX0LCDLR0));
+	writel(((i<<8)|(i&(0xffff00ff))), DDR0_PUB_DX0LCDLR0);
+	i=(((readl(DDR0_PUB_DX0GTR))<<0)&((7<<0)));
+	j=(((readl(DDR0_PUB_DX0GTR))>>12)&((3<<0)));
+	writel(i|(i<<3)|(j<<12)|(j<<14), DDR0_PUB_DX0GTR);
+	i=(readl(DDR0_PUB_DX0LCDLR2));
+	writel(((i<<8)|(i&(0xffff00ff))), DDR0_PUB_DX0LCDLR2);
+	i=(readl(DDR0_PUB_DX1LCDLR0));
+	writel(((i<<8)|(i&(0xffff00ff))), DDR0_PUB_DX1LCDLR0);
+	i=(((readl(DDR0_PUB_DX1GTR))<<0)&((7<<0)));
+	j=(((readl(DDR0_PUB_DX1GTR))>>12)&((3<<0)));
+	writel(i|(i<<3)|(j<<12)|(j<<14), DDR0_PUB_DX1GTR);
+	i=(readl(DDR0_PUB_DX1LCDLR2));
+	writel(((i<<8)|(i&(0xffff00ff))), DDR0_PUB_DX1LCDLR2);
+
 	/* TODO(vitali64pmemail@protonmail.com): see line 87 */
 	//writel((~(1 << 28)) & PUB_PGCR2, DDR0_PUB_PGCR2);
 	writel(PUB_PGCR2 & 0xefffffff, DDR0_PUB_PGCR2);

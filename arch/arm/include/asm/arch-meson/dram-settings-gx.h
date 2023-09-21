@@ -100,11 +100,11 @@ struct meson_gx_dram_timings timings = {
 /* PHY General Control Register? */
 #define PUB_PGCR0              0x7D81E3F
 #define PUB_PGCR1              0x380C6A0
-#define PUB_PGCR2              0x1F12480 & 0xefffffff
+#define PUB_PGCR2              (0x1F12480 & 0xefffffff)
 #define PUB_PGCR3              0xC0AAFE60
 
 #define PUB_DXCCR              0x181884
-#define PUB_DTCR               0x4300308f
+#define PUB_DTCR               0x43003087
 #define PUB_DCR                0xB
 #define PUB_DTAR               (0 | (0 << 12) | (0 << 28))
 #define PUB_DSGCR              0x20645A
@@ -136,7 +136,7 @@ struct meson_gx_dram_timings timings = {
 	(((timings.cwl + timings.al) % 2) ? 3 : 4)) / 2
 #define PCTL0_DFITRDDATAEN     (timings.cl + timings.al - \
 	(((timings.cl + timings.al ) % 2) ? 3 : 4)) / 2
-#define PCTL0_DFITPHYRDLAT     ((timings.cl + timings.al) % 2) ? 16 : 14
+#define PCTL0_DFITPHYRDLAT     ((timings.cl + timings.al) % 2) ? 14 : 16
 #define PCTL0_DFITDRAMCLKDIS   0x1
 #define PCTL0_DFITDRAMCLKEN    0x1
 #define PCTL0_DFITPHYUPDTYPE1  0x200
@@ -144,7 +144,7 @@ struct meson_gx_dram_timings timings = {
 
 #define PCTL0_CMDTSTATEN       0x1
 
-#define PCTL0_DFIODTCFG        0xc0c
+#define PCTL0_DFIODTCFG        0x8
 #define PCTL0_DFIODTCFG1       (0 | (6 << 16))
 #define PCTL0_DFILPCFG0        (1 | (3 << 4) | (1 << 8) | (3 << 12) | \
 	(7 << 16) | (1 << 24) | ( 3 << 28))
