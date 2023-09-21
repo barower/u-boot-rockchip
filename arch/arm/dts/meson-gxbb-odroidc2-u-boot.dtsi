@@ -116,23 +116,19 @@
 					compression = "none";
 					load = <CONFIG_TEXT_BASE>;
 
-					blob-ext {
-						filename = "bl30.bin";
-					};
-					hash {
-						algo = "sha256";
-					};
-				};
+					section {
+						pad-byte = <0x00>;
 
-				bl301 {
-					description = "Secure Monitor";
-					type = "firmware";
-					arch = "arm";
-					compression = "none";
-					load = <CONFIG_TEXT_BASE>;
-
-					blob-ext {
-						filename = "bl301.bin";
+						bl30 {
+							filename = "bl30.bin";
+							size = <(40 * 1024)>;
+							type ="blob-ext";
+						};
+						bl301 {
+							filename = "bl301.bin";
+							size = <(13 * 1024)>;
+							type ="blob-ext";
+						};
 					};
 					hash {
 						algo = "sha256";
@@ -149,6 +145,7 @@
 					entry = <BL31_ADDR>;
 
 					atf-bl31 {
+						filename = "bl31.bin";
 					};
 					hash {
 						algo = "sha256";
@@ -173,7 +170,7 @@
 					description = "NAME.dtb";
 					fdt = "fdt-SEQ";
 					firmware = "bl31";
-					loadables = "bl30", "bl301", "u-boot";
+					loadables = "bl30", "u-boot";
 				};
 			};
 		};
